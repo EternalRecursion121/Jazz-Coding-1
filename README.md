@@ -4,12 +4,19 @@ A digital abyss where messages drift, rot, and fade into obscurity. Built with F
 
 ## C O N C E P T
 
-The Void is an interactive art piece and anonymous message board.
+The Void is an interactive art piece and anonymous message board split into two experiences:
 
-- **Scream**: Post messages anonymously into the database.
-- **Drift**: Messages float aimlessly through the browser window in the visualizer.
-- **Rot**: Text corrupts over time using Zalgo glitches. The older the message, the more unreadable it becomes.
+### 1. S C R E A M (The Input)
+The entry point. A minimalist interface to scream into the abyss.
+- **Anonymous**: No names, no logs, just text.
+- **Warp**: Clicking "ENTER THE VOID" triggers a high-velocity visual warp animation to transport you to the visualization.
+
+### 2. T H E  V O I D (The Abyss)
+The visualization layer where messages drift and decay.
+- **Drift**: Messages float aimlessly through the browser window.
+- **Rot**: Text corrupts over time using Zalgo glitches (`h̷e̶l̷l̶o`). The older the message, the more unreadable it becomes.
 - **Insanity**: The longer you stay on the page, the more the screen blurs, shifts hues, and shakes.
+- **Wake Up**: A "Whiteout" exit animation returns you to reality (the input page).
 
 ## Quick Start
 
@@ -32,8 +39,8 @@ python app.py
 .
 ├── app.py              # The Void's backend (Flask + SQLAlchemy)
 ├── templates/
-│   ├── scream.html     # The input interface (Entry)
-│   └── void.html       # The visualization interface (The Abyss)
+│   ├── scream.html     # Entry page (Input + Warp Animation)
+│   └── void.html       # Visualization page (Drift + Rot + Whiteout)
 ├── requirements.txt    # Dependencies
 └── README.md           # You are here
 ```
@@ -43,4 +50,4 @@ python app.py
 **Scream**
 - `id`: Integer
 - `content`: Text (The scream)
-- `created_at`: DateTime (Used to calculate decay)
+- `created_at`: DateTime (Used to calculate decay intensity)
