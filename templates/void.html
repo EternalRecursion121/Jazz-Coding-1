@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T H E  V O I D</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        :root {
+            --glitch-color-1: #ff0000;
+            --glitch-color-2: #00ff00;
+            --glitch-color-3: #0000ff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #ccc;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+            user-select: none;
+            cursor: none; /* Hide cursor in the void */
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+            animation: flicker 0.15s infinite;
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,1) 100%);
+            pointer-events: none;
+            z-index: 998;
+        }
+
+        .scream {
+            position: absolute;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeIn 2s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: var(--target-opacity, 0.8); }
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            5% { opacity: 0.95; }
+            10% { opacity: 0.9; }
+            15% { opacity: 0.95; }
+            20% { opacity: 0.98; }
+            50% { opacity: 0.95; }
+            80% { opacity: 0.9; }
+            100% { opacity: 0.97; }
+        }
+
+        #void-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            filter: blur(0.5px) contrast(1.1);
+            transition: filter 5s ease;
+        }
+        
+        .return-link {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: #333;
+            text-decoration: none;
+            font-size: 1.2rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 1s, color 0.3s;
+            cursor: pointer;
+        }
+        
+        body:hover .return-link {
+            opacity: 0.5;
+        }
+        
+        .return-link:hover {
+            color: #fff;
+            opacity: 1;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="vignette"></div>
+
+    <div id="void-container">
+        <!-- Screams will drift here -->
+    </div>
+    
+    <a href="/" class="return-link">escape</a>
+
+    <script>
+        const voidContainer = document.getElementById('void-container');
+        let sessionStartTime = Date.now();
+
+        const ZALGO_UP = ['\u030d', '\u030e', '\u0304', '\u0305', '\u033f', '\u0311', '\u0306', '\u0310', '\u0352', '\u0357', '\u0351', '\u0307', '\u0308', '\u030a', '\u0342', '\u0343', '\u0344', '\u034a', '\u034b', '\u034c', '\u0303', '\u0302', '\u030c', '\u0350', '\u0300', '\u0301', '\u030b', '\u030f', '\u0312', '\u0313', '\u0314', '\u033d', '\u0309', '\u0363', '\u0364', '\u0365', '\u0366', '\u0367', '\u0368', '\u0369', '\u036a', '\u036b', '\u036c', '\u036d', '\u036e', '\u036f', '\u033e', '\u035b', '\u0346', '\u031a'];
+        const ZALGO_DOWN = ['\u0316', '\u0317', '\u0318', '\u0319', '\u031c', '\u031d', '\u031e', '\u031f', '\u0320', '\u0324', '\u0325', '\u0326', '\u0329', '\u032a', '\u032b', '\u032c', '\u032d', '\u032e', '\u032f', '\u0330', '\u0331', '\u0332', '\u0333', '\u0339', '\u033a', '\u033b', '\u033c', '\u0345', '\u0347', '\u0348', '\u0349', '\u034d', '\u034e', '\u0353', '\u0354', '\u0355', '\u0356', '\u0359', '\u035a', '\u0323'];
+        const ZALGO_MID = ['\u0315', '\u031b', '\u0340', '\u0341', '\u0358', '\u0321', '\u0322', '\u0327', '\u0328', '\u0334', '\u0335', '\u0336', '\u0337', '\u0338', '\u0360', '\u0361', '\u0362'];
+
+        function corruptText(text, intensity) {
+            let result = '';
+            for (let i = 0; i < text.length; i++) {
+                result += text[i];
+                if (Math.random() < intensity) {
+                    const numChars = Math.floor(Math.random() * 5 * intensity) + 1;
+                    for (let j = 0; j < numChars; j++) {
+                        const set = Math.random() < 0.3 ? ZALGO_UP : (Math.random() < 0.5 ? ZALGO_MID : ZALGO_DOWN);
+                        result += set[Math.floor(Math.random() * set.length)];
+                    }
+                }
+            }
+            return result;
+        }
+
+        function createScreamElement(text, ageSeconds) {
+            const el = document.createElement('div');
+            el.className = 'scream';
+            
+            const decay = Math.min(ageSeconds / 3600, 1.0);
+            const sessionDuration = (Date.now() - sessionStartTime) / 1000;
+            const insanity = Math.min(sessionDuration / 300, 1.0);
+            
+            const combinedIntensity = (decay * 0.7) + (insanity * 0.3);
+            
+            el.textContent = corruptText(text, combinedIntensity);
+            
+            const x = Math.random() * 90 + 5;
+            const y = Math.random() * 90 + 5;
+            const size = 1 + (Math.random() * 2) - (decay * 0.5);
+            const rotation = (Math.random() - 0.5) * 20;
+            
+            el.style.left = `${x}vw`;
+            el.style.top = `${y}vh`;
+            el.style.fontSize = `${Math.max(0.5, size)}rem`;
+            el.style.transform = `rotate(${rotation}deg)`;
+            el.style.setProperty('--target-opacity', Math.max(0.1, 1 - decay));
+            el.style.color = `rgba(${200 + Math.random()*55}, ${200 + Math.random()*55}, ${200 + Math.random()*55}, ${1 - decay})`;
+
+            el.dataset.vx = (Math.random() - 0.5) * 0.1;
+            el.dataset.vy = (Math.random() - 0.5) * 0.1;
+            
+            voidContainer.appendChild(el);
+            return el;
+        }
+
+        async function loadScreams() {
+            try {
+                const response = await fetch('/api/screams');
+                const data = await response.json();
+                voidContainer.innerHTML = '';
+                data.forEach(scream => {
+                    const created = new Date(scream.created_at);
+                    const age = (Date.now() - created) / 1000;
+                    createScreamElement(scream.content, age);
+                });
+            } catch (e) {
+                console.error("The void is silent...", e);
+            }
+        }
+
+        function animate() {
+            const children = voidContainer.children;
+            for (let el of children) {
+                let x = parseFloat(el.style.left);
+                let y = parseFloat(el.style.top);
+                x += parseFloat(el.dataset.vx);
+                y += parseFloat(el.dataset.vy);
+                
+                if (x < -10) x = 110;
+                if (x > 110) x = -10;
+                if (y < -10) y = 110;
+                if (y > 110) y = -10;
+                
+                el.style.left = `${x}vw`;
+                el.style.top = `${y}vh`;
+                
+                if (Math.random() < 0.005) {
+                    el.style.transform = `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px) rotate(${Math.random()*360}deg)`;
+                    setTimeout(() => {
+                        el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
+                    }, 100);
+                }
+            }
+            
+            const sessionDuration = (Date.now() - sessionStartTime) / 1000;
+            const insanity = Math.min(sessionDuration / 600, 1.0);
+            voidContainer.style.filter = `blur(${insanity * 2}px) contrast(${1 + insanity}) hue-rotate(${insanity * 90}deg)`;
+            
+            requestAnimationFrame(animate);
+        }
+
+        loadScreams();
+        animate();
+        setInterval(loadScreams, 30000);
+    </script>
+</body>
+</html>
+
