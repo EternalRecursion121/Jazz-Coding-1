@@ -1,0 +1,144 @@
+{% extends "layout.html" %}
+
+{% block title %}S C R E A M{% endblock %}
+
+{% block extra_css %}
+<style>
+    .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        text-align: center;
+        z-index: 100;
+        position: relative;
+    }
+
+    input[type="text"] {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid #333;
+        color: #fff;
+        font-family: 'VT323', monospace;
+        font-size: 3rem;
+        width: 80%;
+        max-width: 600px;
+        text-align: center;
+        outline: none;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        transition: border-color 0.3s, text-shadow 0.3s;
+    }
+
+    input[type="text"]:focus {
+        border-bottom-color: #fff;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 2px 2px 0px #ff0000, -2px -2px 0px #0000ff;
+    }
+
+    .actions {
+        margin-top: 60px;
+        opacity: 0.7;
+        transition: opacity 0.5s;
+    }
+
+    .actions:hover {
+        opacity: 1;
+    }
+
+    .btn-void {
+        color: #888;
+        text-decoration: none;
+        font-size: 1.8rem;
+        letter-spacing: 5px;
+        padding: 15px 30px;
+        border: 1px solid #444;
+        display: inline-block;
+        transition: all 0.2s;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-void:hover {
+        color: #fff;
+        background-color: #111;
+        border-color: #fff;
+        letter-spacing: 8px;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.1);
+        text-shadow: 2px 2px 0px #ff0000, -2px -2px 0px #0000ff;
+        animation: shake 0.4s infinite;
+    }
+
+    .warp-active {
+        animation: warp 1.5s forwards cubic-bezier(0.7, 0, 0.3, 1);
+    }
+
+    @keyframes warp {
+        0% { transform: scale(1) rotate(0deg); filter: blur(0px); opacity: 1; }
+        50% { transform: scale(0.5) rotate(5deg); filter: blur(2px); opacity: 0.5; }
+        100% { transform: scale(20) rotate(20deg); filter: blur(20px); opacity: 0; }
+    }
+
+    .feedback {
+        margin-top: 20px;
+        height: 20px;
+        color: #444;
+        font-size: 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" id="main-container">
+    <form id="scream-form">
+        <input type="text" id="scream-input" placeholder="SCREAM" autocomplete="off" maxlength="140" autofocus>
+    </form>
+    <div class="feedback" id="feedback"></div>
+    
+    <div class="actions">
+        <a href="{{ url_for('void.enter_void') }}" class="btn-void" id="enter-void">ENTER THE VOID</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const form = document.getElementById('scream-form');
+    const input = document.getElementById('scream-input');
+    const feedback = document.getElementById('feedback');
+    const enterBtn = document.getElementById('enter-void');
+    const container = document.getElementById('main-container');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.style.transform = `translate(${Math.random()*10-5}px, ${Math.random()*10-5}px)`;
+        setTimeout(() => input.style.transform = 'none', 50);
+
+        try {
+            await fetch("{{ url_for('void.scream') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: text })
+            });
+            
+            input.value = '';
+            feedback.textContent = "echo received...";
+            setTimeout(() => feedback.textContent = "", 2000);
+            
+        } catch (err) {
+            feedback.textContent = "the void rejected your scream";
+        }
+    });
+
+    enterBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        container.classList.add('warp-active');
+        setTimeout(() => {
+            window.location.href = "{{ url_for('void.enter_void') }}";
+        }, 1200);
+    });
+</script>
+{% endblock %}

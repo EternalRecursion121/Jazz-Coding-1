@@ -1,0 +1,184 @@
+{% extends "layout.html" %}
+
+{% block title %}JAZZ CODING{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Override body to allow scrolling */
+    body, html {
+        overflow-y: auto !important;
+        height: auto !important;
+        min-height: 100%;
+    }
+
+    .dashboard {
+        padding: 50px 20px;
+        max-width: 1000px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 10;
+    }
+
+    h1 {
+        text-align: center;
+        font-size: 4rem;
+        margin-bottom: 10px;
+        text-shadow: 4px 4px 0px var(--glitch-color-1);
+    }
+
+    .rule-desc {
+        text-align: center;
+        font-size: 1.2rem;
+        color: #888;
+        margin-bottom: 50px;
+    }
+
+    .racer-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 10px;
+        position: relative;
+    }
+
+    .racer-info {
+        width: 150px;
+        flex-shrink: 0;
+    }
+
+    .username {
+        font-size: 1.5rem;
+        display: block;
+    }
+
+    .repo-name {
+        font-size: 0.8rem;
+        color: #666;
+    }
+
+    .track {
+        flex-grow: 1;
+        height: 40px;
+        background: #111;
+        border: 1px solid #333;
+        margin: 0 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background-color: var(--highlight-color);
+        width: 0%; /* Calculated inline */
+        transition: width 1s ease-in-out;
+        position: relative;
+        min-width: 5px; /* Always show a sliver */
+    }
+
+    /* Glitch car effect */
+    .progress-bar::after {
+        content: '>';
+        position: absolute;
+        right: -10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--glitch-color-1);
+        font-weight: bold;
+        font-size: 1.5rem;
+        animation: shake 0.2s infinite;
+    }
+
+    .stats-box {
+        width: 120px;
+        text-align: right;
+    }
+
+    .days-left {
+        font-size: 2rem;
+        color: var(--glitch-color-2);
+    }
+
+    .label {
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    .commit-count {
+        font-size: 1.2rem;
+        color: #fff;
+        margin-top: 5px;
+    }
+
+    .status-dead {
+        color: var(--glitch-color-1);
+        text-decoration: line-through;
+    }
+    
+    .status-dead .username {
+        text-decoration: line-through;
+    }
+
+    .dead-bar {
+        background-color: var(--glitch-color-1);
+        opacity: 0.3;
+    }
+
+    .dead-bar::after {
+        content: 'X';
+    }
+
+    .return-home {
+        display: block;
+        text-align: center;
+        margin-top: 50px;
+        color: #444;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>JAZZ CODING</h1>
+    <p class="rule-desc">COMMIT OR DIE. RULE: {{ max_days }} DAYS MAX INACTIVITY.</p>
+
+    <!-- Calculate max commits for relative progress bar scaling -->
+    {% set max_commits = 1 %}
+    {% for s in stats %}
+        {% if s.total_commits > max_commits %}
+            {% set max_commits = s.total_commits %}
+        {% endif %}
+    {% endfor %}
+
+    {% for stat in stats %}
+    <div class="racer-row {% if stat.status == 'DEAD' %}status-dead{% endif %}">
+        <div class="racer-info">
+            <span class="username">{{ stat.name }}</span>
+            <span class="repo-name">{{ stat.username }}</span>
+        </div>
+        
+        <div class="track">
+            <!-- Scale progress bar relative to the leader -->
+            {% set progress = (stat.total_commits / max_commits) * 100 %}
+            {% if stat.status == 'DEAD' %}
+                <div class="progress-bar dead-bar" style="width: {{ progress }}%;"></div>
+            {% else %}
+                <div class="progress-bar" style="width: {{ progress }}%;"></div>
+            {% endif %}
+        </div>
+
+        <div class="stats-box">
+            {% if stat.status == 'DEAD' %}
+                <span class="days-left" style="color: var(--glitch-color-1)">RIP</span>
+            {% else %}
+                <span class="days-left">{{ stat.days_left }}</span>
+                <div class="label">DAYS LEFT</div>
+            {% endif %}
+            <div class="commit-count">{{ stat.total_commits }} commits</div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <a href="{{ url_for('void.index') }}" class="return-home">return to void</a>
+</div>
+{% endblock %}

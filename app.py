@@ -1,69 +1,44 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, jsonify
-from flask_sqlalchemy import SQLAlchemy
+import jinja2
+from flask import Flask
+from void.models import db
 
-app = Flask(__name__)
+def create_app():
+    app = Flask(__name__)
 
-# Database configuration - Railway provides DATABASE_URL automatically
-database_url = os.environ.get('DATABASE_URL')
-if database_url and database_url.startswith('postgres://'):
-    # Railway uses postgres:// but SQLAlchemy expects postgresql://
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    # Database configuration
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///local.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///local.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
+    db.init_app(app)
 
-class Scream(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    # Register Blueprints
+    from void.routes import bp as void_bp
+    from jazz.routes import bp as jazz_bp
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'content': self.content,
-            'created_at': self.created_at.isoformat()
-        }
+    app.register_blueprint(void_bp)
+    app.register_blueprint(jazz_bp)
+    
+    # Add shared templates to Jinja loader
+    # We use ChoiceLoader to look in app templates (default), shared, and blueprint templates
+    my_loader = jinja2.ChoiceLoader([
+        app.jinja_loader,
+        jinja2.FileSystemLoader(['shared/templates']),
+    ])
+    app.jinja_loader = my_loader
 
-# Initialize database tables
-with app.app_context():
-    db.create_all()
+    # Create tables
+    with app.app_context():
+        db.create_all()
 
-@app.route('/')
-def index():
-    return render_template('scream.html')
+    return app
 
-@app.route('/void')
-def void():
-    return render_template('void.html')
-
-@app.route('/scream', methods=['POST'])
-def scream():
-    content = request.form.get('content', '')
-    # Handle JSON requests as well for the asynchronous UI
-    if not content and request.is_json:
-        content = request.json.get('content', '')
-        
-    if content:
-        scream = Scream(content=content)
-        db.session.add(scream)
-        db.session.commit()
-        
-        if request.is_json:
-            return jsonify({'status': 'success', 'scream': scream.to_dict()})
-            
-    return redirect(url_for('index'))
-
-@app.route('/api/screams')
-def get_screams():
-    # Return recent screams for the void drift effect
-    limit = request.args.get('limit', 50, type=int)
-    screams = Scream.query.order_by(Scream.created_at.desc()).limit(limit).all()
-    return jsonify([s.to_dict() for s in screams])
+app = create_app()
 
 if __name__ == '__main__':
-    # Use PORT environment variable if available (Railway provides this)
     port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=True)

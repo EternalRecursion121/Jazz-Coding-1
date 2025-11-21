@@ -1,0 +1,193 @@
+{% extends "layout.html" %}
+
+{% block title %}T H E  V O I D{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { cursor: none; }
+
+    .scream {
+        position: absolute;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        animation: fadeIn 2s forwards;
+    }
+
+    @keyframes fadeIn {
+        to { opacity: var(--target-opacity, 0.8); }
+    }
+
+    #void-container {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+        filter: blur(0.5px) contrast(1.1);
+        transition: filter 5s ease;
+    }
+    
+    .return-link {
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #888;
+        text-decoration: none;
+        font-size: 1.8rem;
+        z-index: 1000;
+        opacity: 0.6;
+        transition: all 0.3s;
+        cursor: pointer;
+        border: 1px solid #444;
+        padding: 15px 30px;
+        background-color: rgba(0,0,0,0.8);
+        letter-spacing: 3px;
+        box-shadow: 0 0 10px rgba(0,0,0,1);
+    }
+    
+    .return-link:hover {
+        color: #fff;
+        border-color: #fff;
+        opacity: 1;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.2);
+        text-shadow: 2px 2px 0px #ff0000, -2px -2px 0px #0000ff;
+        letter-spacing: 6px;
+        animation: shake 0.4s infinite;
+    }
+    
+    .whiteout-active {
+        animation: whiteout 1.5s forwards ease-in;
+    }
+    
+    @keyframes whiteout {
+        0% { filter: brightness(1) contrast(1); background-color: #000; }
+        100% { filter: brightness(100) contrast(0); background-color: #fff; opacity: 0; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="void-container">
+    <!-- Screams will drift here -->
+</div>
+
+<a href="{{ url_for('void.index') }}" class="return-link" id="wake-up-btn">WAKE UP</a>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const voidContainer = document.getElementById('void-container');
+    const wakeUpBtn = document.getElementById('wake-up-btn');
+    let sessionStartTime = Date.now();
+    
+    // Zalgo text characters
+    const ZALGO_UP = ['\u030d', '\u030e', '\u0304', '\u0305', '\u033f', '\u0311', '\u0306', '\u0310', '\u0352', '\u0357', '\u0351', '\u0307', '\u0308', '\u030a', '\u0342', '\u0343', '\u0344', '\u034a', '\u034b', '\u034c', '\u0303', '\u0302', '\u030c', '\u0350', '\u0300', '\u0301', '\u030b', '\u030f', '\u0312', '\u0313', '\u0314', '\u033d', '\u0309', '\u0363', '\u0364', '\u0365', '\u0366', '\u0367', '\u0368', '\u0369', '\u036a', '\u036b', '\u036c', '\u036d', '\u036e', '\u036f', '\u033e', '\u035b', '\u0346', '\u031a'];
+    const ZALGO_DOWN = ['\u0316', '\u0317', '\u0318', '\u0319', '\u031c', '\u031d', '\u031e', '\u031f', '\u0320', '\u0324', '\u0325', '\u0326', '\u0329', '\u032a', '\u032b', '\u032c', '\u032d', '\u032e', '\u032f', '\u0330', '\u0331', '\u0332', '\u0333', '\u0339', '\u033a', '\u033b', '\u033c', '\u0345', '\u0347', '\u0348', '\u0349', '\u034d', '\u034e', '\u0353', '\u0354', '\u0355', '\u0356', '\u0359', '\u035a', '\u0323'];
+    const ZALGO_MID = ['\u0315', '\u031b', '\u0340', '\u0341', '\u0358', '\u0321', '\u0322', '\u0327', '\u0328', '\u0334', '\u0335', '\u0336', '\u0337', '\u0338', '\u0360', '\u0361', '\u0362'];
+
+    function corruptText(text, intensity) {
+        let result = '';
+        for (let i = 0; i < text.length; i++) {
+            result += text[i];
+            if (Math.random() < intensity) {
+                const numChars = Math.floor(Math.random() * 5 * intensity) + 1;
+                for (let j = 0; j < numChars; j++) {
+                    const set = Math.random() < 0.3 ? ZALGO_UP : (Math.random() < 0.5 ? ZALGO_MID : ZALGO_DOWN);
+                    result += set[Math.floor(Math.random() * set.length)];
+                }
+            }
+        }
+        return result;
+    }
+
+    function createScreamElement(text, ageSeconds) {
+        const el = document.createElement('div');
+        el.className = 'scream';
+        
+        const decay = Math.min(ageSeconds / 3600, 1.0);
+        const sessionDuration = (Date.now() - sessionStartTime) / 1000;
+        const insanity = Math.min(sessionDuration / 300, 1.0);
+        
+        const combinedIntensity = (decay * 0.7) + (insanity * 0.3);
+        
+        el.textContent = corruptText(text, combinedIntensity);
+        
+        const x = Math.random() * 90 + 5;
+        const y = Math.random() * 90 + 5;
+        const size = 1 + (Math.random() * 2) - (decay * 0.5);
+        const rotation = (Math.random() - 0.5) * 20;
+        
+        el.style.left = `${x}vw`;
+        el.style.top = `${y}vh`;
+        el.style.fontSize = `${Math.max(0.5, size)}rem`;
+        el.style.transform = `rotate(${rotation}deg)`;
+        el.style.setProperty('--target-opacity', Math.max(0.1, 1 - decay));
+        el.style.color = `rgba(${200 + Math.random()*55}, ${200 + Math.random()*55}, ${200 + Math.random()*55}, ${1 - decay})`;
+
+        el.dataset.vx = (Math.random() - 0.5) * 0.1;
+        el.dataset.vy = (Math.random() - 0.5) * 0.1;
+        
+        voidContainer.appendChild(el);
+        return el;
+    }
+
+    async function loadScreams() {
+        try {
+            const response = await fetch("{{ url_for('void.get_screams') }}");
+            const data = await response.json();
+            voidContainer.innerHTML = '';
+            data.forEach(scream => {
+                const created = new Date(scream.created_at);
+                const age = (Date.now() - created) / 1000;
+                createScreamElement(scream.content, age);
+            });
+        } catch (e) {
+            console.error("The void is silent...", e);
+        }
+    }
+
+    function animate() {
+        const children = voidContainer.children;
+        for (let el of children) {
+            let x = parseFloat(el.style.left);
+            let y = parseFloat(el.style.top);
+            x += parseFloat(el.dataset.vx);
+            y += parseFloat(el.dataset.vy);
+            
+            if (x < -10) x = 110;
+            if (x > 110) x = -10;
+            if (y < -10) y = 110;
+            if (y > 110) y = -10;
+            
+            el.style.left = `${x}vw`;
+            el.style.top = `${y}vh`;
+            
+            if (Math.random() < 0.005) {
+                el.style.transform = `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px) rotate(${Math.random()*360}deg)`;
+                setTimeout(() => {
+                    el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
+                }, 100);
+            }
+        }
+        
+        const sessionDuration = (Date.now() - sessionStartTime) / 1000;
+        const insanity = Math.min(sessionDuration / 600, 1.0);
+        voidContainer.style.filter = `blur(${insanity * 2}px) contrast(${1 + insanity}) hue-rotate(${insanity * 90}deg)`;
+        
+        requestAnimationFrame(animate);
+    }
+
+    wakeUpBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.body.classList.add('whiteout-active');
+        setTimeout(() => {
+            window.location.href = "{{ url_for('void.index') }}";
+        }, 1200);
+    });
+
+    loadScreams();
+    animate();
+    setInterval(loadScreams, 30000);
+</script>
+{% endblock %}
+
