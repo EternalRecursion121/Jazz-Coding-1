@@ -2,6 +2,8 @@
 
 An interactive art piece and gamified coding tracker.
 
+https://jazzcoding.dev/
+
 ## Modules
 
 This project is split into two distinct experiences:
