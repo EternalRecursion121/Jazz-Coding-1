@@ -12,6 +12,7 @@
         pointer-events: none;
         opacity: 0;
         animation: fadeIn 2s forwards;
+        transition: opacity 0.5s ease;
     }
 
     @keyframes fadeIn {
@@ -24,6 +25,61 @@
         position: relative;
         filter: blur(0.5px) contrast(1.1);
         transition: filter 5s ease;
+    }
+
+    #eye-glyph {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        gap: 60px;
+        opacity: 0.35;
+        pointer-events: auto;
+        filter: blur(0.4px);
+        z-index: 100;
+        transition: opacity 0.4s ease;
+    }
+
+    .eye {
+        width: 120px;
+        height: 48px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 60% / 90%;
+        position: relative;
+        animation: slowPulse 6s ease-in-out infinite;
+    }
+
+    .eye::after {
+        content: '';
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.6);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.45);
+    }
+
+    .eye.left::after { box-shadow: -6px 0 20px rgba(255,255,255,0.3); }
+    .eye.right::after { box-shadow: 6px 0 20px rgba(255,255,255,0.3); }
+
+    @keyframes slowPulse {
+        0%, 100% { transform: scaleX(1); }
+        50% { transform: scaleX(0.8); }
+    }
+
+    body.eyes-open #eye-glyph {
+        opacity: 0.9;
+        filter: none;
+    }
+
+    body.eyes-open #void-container .scream {
+        opacity: 1 !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+        text-shadow: 0 0 18px rgba(255, 255, 255, 0.6);
     }
     
     .return-link {
@@ -67,6 +123,11 @@
 {% endblock %}
 
 {% block content %}
+<div id="eye-glyph">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+</div>
+
 <div id="void-container">
     <!-- Screams will drift here -->
 </div>
@@ -78,6 +139,7 @@
 <script>
     const voidContainer = document.getElementById('void-container');
     const wakeUpBtn = document.getElementById('wake-up-btn');
+    const eyeGlyph = document.getElementById('eye-glyph');
     let sessionStartTime = Date.now();
     
     // Zalgo text characters
@@ -119,15 +181,22 @@
         
         el.style.left = `${x}vw`;
         el.style.top = `${y}vh`;
+        const baseOpacity = Math.max(0.1, 1 - decay);
         el.style.fontSize = `${Math.max(0.5, size)}rem`;
         el.style.transform = `rotate(${rotation}deg)`;
-        el.style.setProperty('--target-opacity', Math.max(0.1, 1 - decay));
-        el.style.color = `rgba(${200 + Math.random()*55}, ${200 + Math.random()*55}, ${200 + Math.random()*55}, ${1 - decay})`;
+        el.style.setProperty('--target-opacity', baseOpacity);
+        el.style.opacity = baseOpacity;
+        el.dataset.baseOpacity = baseOpacity;
+        const colorBase = 200 + Math.random()*55;
+        el.style.color = `rgba(${colorBase}, ${200 + Math.random()*55}, ${200 + Math.random()*55}, ${baseOpacity})`;
 
         el.dataset.vx = (Math.random() - 0.5) * 0.1;
         el.dataset.vy = (Math.random() - 0.5) * 0.1;
         
         voidContainer.appendChild(el);
+        if (document.body.classList.contains('eyes-open')) {
+            el.style.opacity = '1';
+        }
         return el;
     }
 
@@ -177,6 +246,23 @@
         requestAnimationFrame(animate);
     }
 
+    function setEyesOpen(state) {
+        document.body.classList.toggle('eyes-open', state);
+        const children = voidContainer.children;
+        for (let el of children) {
+            if (state) {
+                if (!el.dataset.prevOpacity) {
+                    el.dataset.prevOpacity = el.style.opacity;
+                }
+                el.style.opacity = '1';
+            } else {
+                const fallback = el.dataset.prevOpacity ?? el.dataset.baseOpacity ?? '';
+                el.style.opacity = fallback;
+                delete el.dataset.prevOpacity;
+            }
+        }
+    }
+
     wakeUpBtn.addEventListener('click', (e) => {
         e.preventDefault();
         document.body.classList.add('whiteout-active');
@@ -184,6 +270,9 @@
             window.location.href = "{{ url_for('void.index') }}";
         }, 1200);
     });
+
+    eyeGlyph.addEventListener('mouseenter', () => setEyesOpen(true));
+    eyeGlyph.addEventListener('mouseleave', () => setEyesOpen(false));
 
     loadScreams();
     animate();
