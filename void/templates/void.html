@@ -888,6 +888,15 @@
             }
         }
         
+        // Apply Eye Shake if active (from Fall Deeper)
+        if (eyeGlyph.dataset.shakeIntensity) {
+            const shake = parseFloat(eyeGlyph.dataset.shakeIntensity);
+            const sx = (Math.random() - 0.5) * shake;
+            const sy = (Math.random() - 0.5) * shake;
+            // Important: preserve the centering translate(-50%, -50%)
+            eyeGlyph.style.transform = `translate(calc(-50% + ${sx}px), calc(-50% + ${sy}px))`;
+        }
+
         const sessionDuration = (Date.now() - sessionStartTime) / 1000;
         const insanity = Math.min(sessionDuration / 600, 1.0) + chaosLevel;
         voidContainer.style.filter = `blur(${Math.max(0, insanity * 2)}px) contrast(${1 + insanity}) hue-rotate(${insanity * 90}deg)`;
