@@ -130,6 +130,22 @@
         box-shadow: 0 0 10px rgba(0,0,0,1);
     }
     
+    #fall-deeper-btn {
+        bottom: 120px;
+        font-size: 1.2rem;
+        border-color: #600;
+        color: #a00;
+        opacity: 0.4;
+    }
+    
+    #fall-deeper-btn:hover {
+        border-color: #f00;
+        color: #f00;
+        text-shadow: 0 0 10px #f00;
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+        animation: shake 0.2s infinite;
+    }
+
     .return-link:hover {
         color: #fff;
         border-color: #fff;
@@ -139,7 +155,45 @@
         letter-spacing: 6px;
         animation: shake 0.4s infinite;
     }
+
+    /* Fake Wikipedia Overlay */
+    #fake-wiki-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #fff;
+        color: #202122;
+        font-family: sans-serif;
+        z-index: 9999;
+        display: none;
+        overflow: hidden;
+        padding: 20px;
+        box-sizing: border-box;
+        cursor: auto;
+    }
     
+    #fake-wiki-overlay a { color: #3366cc; text-decoration: none; }
+    #fake-wiki-overlay a:hover { text-decoration: underline; text-shadow: none; }
+    
+    .wiki-header { border-bottom: 1px solid #a7d7f9; padding-bottom: 0.5em; margin-bottom: 1em; }
+    .wiki-logo { font-family: 'Linux Libertine', 'Georgia', 'Times', serif; font-size: 1.8em; margin-bottom: 5px; }
+    .wiki-title { font-family: 'Linux Libertine', 'Georgia', 'Times', serif; font-size: 2.2em; border-bottom: 1px solid #a2a9b1; margin-bottom: 0.5em; padding-bottom: 0.2em; }
+    .wiki-content { font-size: 0.95em; line-height: 1.6; max-width: 800px; }
+    .wiki-sidebar { float: right; border: 1px solid #a2a9b1; background: #f8f9fa; padding: 1em; width: 250px; margin-left: 1em; font-size: 0.9em; }
+    
+    .wait-what {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        font-size: 6rem;
+        color: rgba(0,0,0,0.03);
+        font-weight: bold;
+        pointer-events: none;
+        transform: rotate(-15deg);
+    }
+
     .whiteout-active {
         animation: whiteout 1.5s forwards ease-in;
     }
@@ -161,15 +215,50 @@
     <!-- Screams will drift here -->
 </div>
 
+<a href="#" class="return-link" id="fall-deeper-btn">FALL DEEPER</a>
 <a href="{{ url_for('void.index') }}" class="return-link" id="wake-up-btn">WAKE UP</a>
+
+<div id="fake-wiki-overlay">
+    <div class="wiki-header">
+        <div class="wiki-logo">Wikipedia</div>
+        <small>The Free Encyclopedia</small>
+    </div>
+    <div class="wiki-content">
+        <div class="wiki-sidebar">
+            <strong>Void Entity</strong><br>
+            <small>Class: Keter</small><br>
+            <hr>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a3/June_odd-eyed-cat.jpg" style="width:100%; filter: grayscale(100%) contrast(200%);" alt="Subject">
+        </div>
+        <h1 class="wiki-title">Semantic Saturation</h1>
+        <p><b>Semantic saturation</b> (also known as <b>verbal satiation</b>) is a psychological phenomenon in which repetition causes a word or phrase to temporarily lose meaning for the listener, who then perceives the speech as repeated meaningless sounds.</p>
+        <p>The phenomenon was first described by <a href="#">Leon Jakobovits James</a> in his 1962 doctoral dissertation at McGill University. He demonstrated that it is possible to reach a state of "experimental neurosis" through repetitive exposure to textual stimuli.</p>
+        <h3>Process</h3>
+        <p>The inspection of the void results in a breakdown of cognitive barriers. Subjects report hearing voices, specifically "screams" that form cohesive <a href="#">gestalts</a>.</p>
+    </div>
+    <div class="wait-what">wait what?</div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
     const voidContainer = document.getElementById('void-container');
     const wakeUpBtn = document.getElementById('wake-up-btn');
+    const fallDeeperBtn = document.getElementById('fall-deeper-btn');
+    const wikiOverlay = document.getElementById('fake-wiki-overlay');
     const eyeGlyph = document.getElementById('eye-glyph');
     let sessionStartTime = Date.now();
+    let monsterMode = false;
+    let chaosLevel = 0;
+    
+    // Monster shape targets (rough "face")
+    const monsterTargets = [
+        {x: 30, y: 35}, // Left Eye
+        {x: 70, y: 35}, // Right Eye
+        {x: 50, y: 70}, // Mouth center
+        {x: 35, y: 65}, // Mouth L
+        {x: 65, y: 65}  // Mouth R
+    ];
     
     // Zalgo text characters
     const ZALGO_UP = ['\u030d', '\u030e', '\u0304', '\u0305', '\u033f', '\u0311', '\u0306', '\u0310', '\u0352', '\u0357', '\u0351', '\u0307', '\u0308', '\u030a', '\u0342', '\u0343', '\u0344', '\u034a', '\u034b', '\u034c', '\u0303', '\u0302', '\u030c', '\u0350', '\u0300', '\u0301', '\u030b', '\u030f', '\u0312', '\u0313', '\u0314', '\u033d', '\u0309', '\u0363', '\u0364', '\u0365', '\u0366', '\u0367', '\u0368', '\u0369', '\u036a', '\u036b', '\u036c', '\u036d', '\u036e', '\u036f', '\u033e', '\u035b', '\u0346', '\u031a'];
@@ -249,31 +338,78 @@
         for (let el of children) {
             let x = parseFloat(el.style.left);
             let y = parseFloat(el.style.top);
-            x += parseFloat(el.dataset.vx);
-            y += parseFloat(el.dataset.vy);
             
-            if (x < -10) x = 110;
-            if (x > 110) x = -10;
-            if (y < -10) y = 110;
-            if (y > 110) y = -10;
+            if (monsterMode) {
+                // Monster Mode Logic: Attract to nearest target
+                if (!el.targetNode) {
+                    el.targetNode = monsterTargets[Math.floor(Math.random() * monsterTargets.length)];
+                }
+                
+                const tx = el.targetNode.x;
+                const ty = el.targetNode.y;
+                
+                // Ease towards target
+                x += (tx - x) * 0.02 * chaosLevel;
+                y += (ty - y) * 0.02 * chaosLevel;
+                
+                // Jitter
+                x += (Math.random() - 0.5) * chaosLevel * 2;
+                y += (Math.random() - 0.5) * chaosLevel * 2;
+                
+            } else {
+                // Standard Drift
+                x += parseFloat(el.dataset.vx);
+                y += parseFloat(el.dataset.vy);
+                
+                if (x < -10) x = 110;
+                if (x > 110) x = -10;
+                if (y < -10) y = 110;
+                if (y > 110) y = -10;
+            }
             
             el.style.left = `${x}vw`;
             el.style.top = `${y}vh`;
             
-            if (Math.random() < 0.005) {
+            if (Math.random() < 0.005 + (chaosLevel * 0.1)) {
                 el.style.transform = `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px) rotate(${Math.random()*360}deg)`;
-                setTimeout(() => {
-                    el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
-                }, 100);
+                if (!monsterMode) {
+                    setTimeout(() => {
+                        el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
+                    }, 100);
+                }
             }
         }
         
         const sessionDuration = (Date.now() - sessionStartTime) / 1000;
-        const insanity = Math.min(sessionDuration / 600, 1.0);
-        voidContainer.style.filter = `blur(${insanity * 2}px) contrast(${1 + insanity}) hue-rotate(${insanity * 90}deg)`;
+        const insanity = Math.min(sessionDuration / 600, 1.0) + chaosLevel;
+        voidContainer.style.filter = `blur(${Math.max(0, insanity * 2)}px) contrast(${1 + insanity}) hue-rotate(${insanity * 90}deg)`;
         
         requestAnimationFrame(animate);
     }
+
+    function triggerFallDeeper() {
+        monsterMode = true;
+        fallDeeperBtn.style.display = 'none';
+        wakeUpBtn.style.display = 'none';
+        
+        // Phase 1: Build Chaos
+        let buildUp = setInterval(() => {
+            chaosLevel += 0.05;
+            if (chaosLevel > 5) {
+                clearInterval(buildUp);
+                // Phase 2: Switch
+                document.body.style.background = '#fff';
+                voidContainer.style.display = 'none';
+                eyeGlyph.style.display = 'none';
+                wikiOverlay.style.display = 'block';
+            }
+        }, 200);
+    }
+    
+    fallDeeperBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        triggerFallDeeper();
+    });
 
     function setEyesOpen(state) {
         document.body.classList.toggle('eyes-open', state);
