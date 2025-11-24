@@ -85,10 +85,50 @@
         color: #444;
         font-size: 1.2rem;
     }
+
+    #jumpscare-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #000;
+        z-index: 10000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+    }
+
+    .scare-face {
+        font-family: monospace;
+        font-size: 15rem;
+        color: #ff0000;
+        text-shadow: 5px 5px 0 #fff, -5px -5px 0 #fff;
+        animation: scare-shake 0.1s infinite;
+        white-space: pre;
+        line-height: 1;
+    }
+
+    @keyframes scare-shake {
+        0% { transform: translate(0, 0) scale(1); }
+        25% { transform: translate(-10px, 10px) scale(1.1); }
+        50% { transform: translate(10px, -10px) scale(0.9); }
+        75% { transform: translate(-10px, -10px) scale(1.2); }
+        100% { transform: translate(10px, 10px) scale(1); }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<div id="jumpscare-overlay" style="display: none;">
+    <div class="scare-face">
+(  o  )
+ \   /
+  O O
+</div>
+</div>
 <div class="container" id="main-container">
     <form id="scream-form">
         <input type="text" id="scream-input" placeholder="SCREAM" autocomplete="off" maxlength="140" autofocus>
@@ -108,6 +148,53 @@
     const feedback = document.getElementById('feedback');
     const enterBtn = document.getElementById('enter-void');
     const container = document.getElementById('main-container');
+    const scareOverlay = document.getElementById('jumpscare-overlay');
+
+    // Jump Scare Logic
+    const triggerScare = () => {
+        // Audio
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(100, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+        oscillator.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+
+        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.3);
+
+        // Visual
+        scareOverlay.style.display = 'flex';
+        document.body.style.filter = 'invert(1)';
+        
+        setTimeout(() => {
+            scareOverlay.style.display = 'none';
+            document.body.style.filter = 'none';
+            isScaring = false;
+        }, 200);
+    };
+
+    let lastScareTime = 0;
+    let isScaring = false;
+    const SCARE_COOLDOWN = 100000; // Big cooldown
+    const SCARE_CHANCE = 0.1; // 10% chance per keystroke
+
+    input.addEventListener('input', () => {
+        const now = Date.now();
+        if (!isScaring && (now - lastScareTime > SCARE_COOLDOWN) && Math.random() < SCARE_CHANCE) {
+            lastScareTime = now;
+            isScaring = true;
+            triggerScare();
+        }
+    });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();

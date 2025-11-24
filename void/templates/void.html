@@ -82,6 +82,35 @@
         text-shadow: 0 0 18px rgba(255, 255, 255, 0.6);
     }
     
+    /* Blink Mode - Squinting Eyes */
+    body.blink-mode .eye {
+        height: 12px; /* Much narrower */
+        border-radius: 50% / 80%;
+        border-width: 3px;
+        background: rgba(0, 0, 0, 0.5);
+        animation: squintPulse 4s ease-in-out infinite;
+    }
+
+    body.blink-mode .eye::after {
+        width: 14px;
+        height: 14px;
+        /* Pupil moves slightly */
+        animation: search 10s infinite;
+    }
+
+    @keyframes squintPulse {
+        0%, 100% { transform: scaleX(1); }
+        50% { transform: scaleX(0.9); }
+    }
+
+    @keyframes search {
+        0%, 100% { transform: translate(-50%, -50%); }
+        20% { transform: translate(-20%, -50%); }
+        40% { transform: translate(-80%, -50%); }
+        60% { transform: translate(-50%, -50%); }
+        80% { transform: translate(-50%, -50%); }
+    }
+
     .return-link {
         position: fixed;
         bottom: 40px;
@@ -273,6 +302,18 @@
 
     eyeGlyph.addEventListener('mouseenter', () => setEyesOpen(true));
     eyeGlyph.addEventListener('mouseleave', () => setEyesOpen(false));
+
+    // Random Blink Mode (1 in 3 chance)
+    if (Math.random() < 0.33) {
+        document.body.classList.add('blink-mode');
+    }
+
+    // Toggle Blink Mode
+    document.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'b') {
+            document.body.classList.toggle('blink-mode');
+        }
+    });
 
     loadScreams();
     animate();
