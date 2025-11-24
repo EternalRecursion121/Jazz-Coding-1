@@ -43,6 +43,55 @@
         z-index: 1500;
     }
 
+    #eye-glyph {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+        gap: 60px;
+        opacity: 0.35;
+        pointer-events: auto;
+        filter: blur(0.4px);
+        z-index: 100;
+        transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s ease;
+    }
+
+    #eye-glyph .eye-row {
+        display: flex;
+        gap: 60px;
+    }
+
+    .eye {
+        width: 120px;
+        height: 48px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 60% / 90%;
+        position: relative;
+        animation: slowPulse 6s ease-in-out infinite;
+    }
+
+    .eye::after {
+        content: '';
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.6);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.45);
+    }
+
+    .eye.left::after { box-shadow: -6px 0 20px rgba(255,255,255,0.3); }
+    .eye.right::after { box-shadow: 6px 0 20px rgba(255,255,255,0.3); }
+
+    body.eyes-open #eye-glyph {
+        opacity: 0.9;
+        filter: none;
+    }
+
     #camera-video {
         display: none;
     }
@@ -310,6 +359,19 @@
         50% { opacity: 1; }
     }
 
+    @keyframes shake {
+        0%, 100% { transform: translate(0, 0); }
+        10% { transform: translate(-2px, 2px); }
+        20% { transform: translate(2px, -2px); }
+        30% { transform: translate(-2px, -2px); }
+        40% { transform: translate(2px, 2px); }
+        50% { transform: translate(-2px, 2px); }
+        60% { transform: translate(2px, -2px); }
+        70% { transform: translate(-2px, -2px); }
+        80% { transform: translate(2px, 2px); }
+        90% { transform: translate(-2px, 2px); }
+    }
+
     .whiteout-active {
         animation: whiteout 1.5s forwards ease-in;
     }
@@ -327,6 +389,11 @@
 <canvas id="face-canvas"></canvas>
 
 <canvas id="fullscreen-eye-canvas"></canvas>
+
+<div id="eye-glyph">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+</div>
 
 <div id="void-container">
     <!-- Screams will drift here -->
@@ -531,6 +598,7 @@
     const fallDeeperBtn = document.getElementById('fall-deeper-btn');
     const wikiOverlay = document.getElementById('fake-wiki-overlay');
     const wikiBody = document.getElementById('wiki-body-text');
+    const eyeGlyph = document.getElementById('eye-glyph');
     const cameraVideo = document.getElementById('camera-video');
     const faceCanvas = document.getElementById('face-canvas');
     const faceCtx = faceCanvas.getContext('2d');
@@ -989,6 +1057,14 @@
         fallDeeperBtn.style.display = 'none';
         wakeUpBtn.style.display = 'none';
         
+        // If using fallback eyes, they're already visible, just enhance them
+        if (!usingFallbackEyes) {
+            // Show the simple eye glyph for the transition (MediaPipe version)
+            eyeGlyph.style.display = 'flex';
+            eyeGlyph.style.opacity = '1';
+            eyeGlyph.style.transform = 'translate(-50%, -50%)';
+        }
+        
         // Phase 1: Build Chaos (Faster now)
         let buildUp = setInterval(() => {
             chaosLevel += 0.15; // Was 0.05 - much faster build up
@@ -1025,8 +1101,10 @@
                 voidContainer.style.display = 'none';
                 eyeGlyph.style.display = 'none';
                 eyeGlyph.style.filter = ''; // Reset for later
+                eyeGlyph.dataset.shakeIntensity = ''; // Clear shake
                 
                 // Show overlay and prep words
+                wikiOverlay.style.opacity = '1';
                 wikiOverlay.style.display = 'block';
                 wrapWords(wikiBody);
             }
@@ -1071,6 +1149,46 @@
         }, 1200);
     });
 
+    // Fallback to simple CSS eyes
+    let usingFallbackEyes = false;
+    
+    function activateFallbackEyes() {
+        console.log('Activating fallback CSS eyes...');
+        usingFallbackEyes = true;
+        
+        // Hide MediaPipe canvases
+        eyeCanvas.style.display = 'none';
+        webcamCanvas.style.display = 'none';
+        faceCanvas.style.display = 'none';
+        if (cameraVideo.srcObject) {
+            cameraVideo.srcObject.getTracks().forEach(track => track.stop());
+        }
+        
+        // Show simple eye glyph
+        eyeGlyph.style.display = 'flex';
+        
+        // Add hover interaction for simple eyes
+        eyeGlyph.addEventListener('mouseenter', () => setEyesOpen(true));
+        eyeGlyph.addEventListener('mouseleave', () => setEyesOpen(false));
+    }
+    
+    function setEyesOpen(state) {
+        document.body.classList.toggle('eyes-open', state);
+        const children = voidContainer.children;
+        for (let el of children) {
+            if (state) {
+                if (!el.dataset.prevOpacity) {
+                    el.dataset.prevOpacity = el.style.opacity;
+                }
+                el.style.opacity = '1';
+            } else {
+                const fallback = el.dataset.prevOpacity ?? el.dataset.baseOpacity ?? '';
+                el.style.opacity = fallback;
+                delete el.dataset.prevOpacity;
+            }
+        }
+    }
+
     // MediaPipe face mesh setup with iris tracking
     async function initializeFaceMesh() {
         try {
@@ -1101,6 +1219,8 @@
                 } 
             });
             cameraVideo.srcObject = stream;
+            
+            console.log('Camera access granted - using MediaPipe eye tracking');
             
             // Configure video display based on debug mode
             if (DEBUG_VIDEO) {
@@ -1165,6 +1285,8 @@
             
         } catch (error) {
             console.error('Face detection initialization failed:', error);
+            console.log('Falling back to simple CSS eyes');
+            activateFallbackEyes();
         }
     }
 
@@ -1561,10 +1683,24 @@
     loadScreams();
     animate();
     setInterval(loadScreams, 30000);
+    
+    // Try MediaPipe, but fallback after timeout
     initializeFaceMesh();
     
+    // Fallback timeout - if MediaPipe hasn't initialized after 5 seconds, use simple eyes
+    setTimeout(() => {
+        if (!usingFallbackEyes && (!faceMesh || !isDetecting)) {
+            console.log('MediaPipe initialization timeout - using fallback eyes');
+            activateFallbackEyes();
+        }
+    }, 5000);
+    
     // Console help
-    console.log('👁️ EYE & VOID CONFIGURATION COMMANDS:');
+    console.log('👁️ THE VOID - Eye Tracking System');
+    console.log('Attempting MediaPipe eye tracking...');
+    console.log('Will fallback to simple CSS eyes if camera unavailable');
+    console.log('');
+    console.log('👁️ EYE & VOID CONFIGURATION COMMANDS (MediaPipe only):');
     console.log('updateEyeConfig("path.to.setting", value) - Update any config value');
     console.log('setEyePositions(leftX, leftY, rightX, rightY) - Position eyes (0-1)');
     console.log('setEyeSizes(width, height) - Eye canvas sizes');
