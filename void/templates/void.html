@@ -192,6 +192,12 @@
         font-weight: bold;
         pointer-events: none;
         transform: rotate(-15deg);
+        animation: ghostFade 6s ease-in-out infinite;
+    }
+
+    @keyframes ghostFade {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 1; }
     }
 
     .whiteout-active {
