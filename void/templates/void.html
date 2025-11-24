@@ -8,11 +8,13 @@
 
     .scream {
         position: absolute;
-        white-space: nowrap;
+        white-space: pre-wrap;
         pointer-events: none;
         opacity: 0;
         animation: fadeIn 2s forwards;
         transition: opacity 0.5s ease;
+        max-width: 300px;
+        text-align: center;
     }
 
     @keyframes fadeIn {
@@ -682,11 +684,27 @@
                     eyeGlyph.style.opacity = '0';
                     eyeGlyph.style.transform = 'translate(-50%, -50%) scale(0.1)';
                     
+                    // Build intensity for relapse eyes
+                    let relapseIntensity = 0;
+                    let relapseInterval = setInterval(() => {
+                        relapseIntensity += 0.1;
+                        const rGlow = relapseIntensity * 60;
+                        const rBright = 1 + (relapseIntensity * 5);
+                        eyeGlyph.style.filter = `drop-shadow(0 0 ${rGlow}px white) brightness(${rBright})`;
+                        
+                        const rShake = relapseIntensity * 15;
+                        const rx = (Math.random() - 0.5) * rShake;
+                        const ry = (Math.random() - 0.5) * rShake;
+                        eyeGlyph.style.transform = `translate(calc(-50% + ${rx}px), calc(-50% + ${ry}px)) scale(${0.1 + relapseIntensity})`;
+                        
+                        if (relapseIntensity > 1.5) clearInterval(relapseInterval);
+                    }, 50);
+
                     // Eyes return aggressively
                     setTimeout(() => {
                         eyeGlyph.style.transition = 'all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
                         eyeGlyph.style.opacity = '1';
-                        eyeGlyph.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                        // Transform handled by interval above mostly, but ensure final state
                         document.body.classList.add('eyes-open');
                         
                         // Play harsh sound if possible, then reset
@@ -711,21 +729,48 @@
         fallDeeperBtn.style.display = 'none';
         wakeUpBtn.style.display = 'none';
         
-        // Phase 1: Build Chaos
+        // Phase 1: Build Chaos (Faster now)
         let buildUp = setInterval(() => {
-            chaosLevel += 0.05;
+            chaosLevel += 0.15; // Was 0.05 - much faster build up
+            
+            // Intensity effects on eyes
+            const intensity = Math.min(chaosLevel, 5) / 5; // 0 to 1
+            const glow = intensity * 50;
+            const brightness = 1 + (intensity * 4); // Up to 5x brightness
+            const shake = intensity * 10;
+            
+            eyeGlyph.style.filter = `drop-shadow(0 0 ${glow}px rgba(255,255,255,${intensity})) brightness(${brightness})`;
+            
+            // Intense Strobe/Shake via transform in animate loop, but we set properties here
+            eyeGlyph.dataset.shakeIntensity = shake;
+
+            // Random line breaks in text
+            const children = voidContainer.children;
+            for (let el of children) {
+                if (Math.random() < 0.1) {
+                    if (el.textContent.includes('\n')) {
+                        el.textContent = el.textContent.replace('\n', '');
+                    } else {
+                        const len = el.textContent.length;
+                        const idx = Math.floor(Math.random() * len);
+                        el.textContent = el.textContent.slice(0, idx) + '\n' + el.textContent.slice(idx);
+                    }
+                }
+            }
+
             if (chaosLevel > 5) {
                 clearInterval(buildUp);
                 // Phase 2: Switch
                 document.body.style.background = '#fff';
                 voidContainer.style.display = 'none';
                 eyeGlyph.style.display = 'none';
+                eyeGlyph.style.filter = ''; // Reset for later
                 
                 // Show overlay and prep words
                 wikiOverlay.style.display = 'block';
                 wrapWords(wikiBody);
             }
-        }, 200);
+        }, 100); // Was 200
     }
 
     function setEyesOpen(state) {
