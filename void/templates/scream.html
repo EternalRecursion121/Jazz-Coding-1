@@ -118,6 +118,31 @@
         75% { transform: translate(-10px, -10px) scale(1.2); }
         100% { transform: translate(10px, 10px) scale(1); }
     }
+
+    /* Burn-in marks from scare */
+    .burn-mark {
+        position: fixed;
+        font-family: monospace;
+        font-size: 8rem;
+        color: rgba(255, 0, 0, 0.02);
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        user-select: none;
+        white-space: pre;
+        line-height: 1;
+        z-index: 5000;
+        transition: color 0.3s;
+        opacity: 0.1;
+    }
+
+    .burn-mark:hover {
+        color: rgba(255, 0, 0, 0.4);
+    }
+
+    @keyframes burn-pulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.8; }
+    }
 </style>
 {% endblock %}
 
@@ -150,6 +175,11 @@
     const container = document.getElementById('main-container');
     const scareOverlay = document.getElementById('jumpscare-overlay');
 
+    // Track if user has been scared (for burn-in marks)
+    let hasBeenScared = localStorage.getItem('hasBeenScared') === 'true';
+    let burnMarks = [];
+    let burnMarksCreated = false;
+
     // Jump Scare Logic
     const triggerScare = () => {
         // Audio
@@ -179,8 +209,104 @@
             scareOverlay.style.display = 'none';
             document.body.style.filter = 'none';
             isScaring = false;
+            
+            // Create burn marks after FIRST scare
+            if (!hasBeenScared && !burnMarksCreated) {
+                hasBeenScared = true;
+                localStorage.setItem('hasBeenScared', 'true');
+                // Delay burn mark appearance slightly
+                setTimeout(() => {
+                    createBurnMarks();
+                    burnMarksCreated = true;
+                }, 1000);
+            }
         }, 200);
     };
+
+    function createBurnMarks() {
+        // Create 3-5 burn-in marks
+        const numMarks = 3 + Math.floor(Math.random() * 3);
+        const scareFace = `(  o  )\n \\   /\n  O O`;
+        
+        console.log('Creating burn marks:', numMarks);
+        
+        for (let i = 0; i < numMarks; i++) {
+            const mark = document.createElement('div');
+            mark.className = 'burn-mark';
+            mark.textContent = scareFace;
+            
+            // Random position
+            mark.style.left = `${Math.random() * 70 + 15}%`;
+            mark.style.top = `${Math.random() * 70 + 15}%`;
+            const initialRotation = (Math.random() - 0.5) * 30;
+            mark.style.transform = `rotate(${initialRotation}deg)`;
+            mark.dataset.rotation = initialRotation;
+            
+            // Add padding for larger click area
+            mark.style.padding = '20px';
+            
+            // Click handler - go to fake news
+            mark.addEventListener('click', (e) => {
+                console.log('Burn mark clicked!');
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = "{{ url_for('void.fake_news') }}";
+            });
+            
+            // Also add touch event for mobile
+            mark.addEventListener('touchstart', (e) => {
+                console.log('Burn mark touched!');
+                e.preventDefault();
+                window.location.href = "{{ url_for('void.fake_news') }}";
+            });
+            
+            document.body.appendChild(mark);
+            burnMarks.push(mark);
+            
+            console.log('Burn mark created at', mark.style.left, mark.style.top);
+            
+            // Start pulsing after a short delay - make it aggressive sooner
+            setTimeout(() => {
+                startBurnPulse(mark, i);
+            }, 2000 + i * 1000);
+        }
+    }
+
+    function startBurnPulse(mark, index) {
+        let pulseIntensity = 0;
+        let intensityMultiplier = 0.1; // Start VERY subtle
+        
+        setInterval(() => {
+            pulseIntensity += 0.08;
+            intensityMultiplier += 0.008; // Grows slowly over time
+            
+            const pulse = Math.sin(pulseIntensity + index) * 0.5 + 0.5;
+            const minOpacity = 0.05 * intensityMultiplier; // Start almost invisible
+            const maxOpacity = Math.min(0.95, 0.1 + (intensityMultiplier * 0.8));
+            
+            mark.style.opacity = minOpacity + (pulse * (maxOpacity - minOpacity));
+            
+            // Color gets redder over time
+            const colorIntensity = Math.min(intensityMultiplier * 2, 1);
+            mark.style.color = `rgba(255, ${Math.floor(50 * (1 - colorIntensity))}, ${Math.floor(50 * (1 - colorIntensity))}, 1)`;
+            
+            // Add pulsing scale and glow (subtle at first)
+            const scale = 1 + (pulse * 0.15 * intensityMultiplier);
+            const rotation = parseFloat(mark.dataset.rotation || 0) + (pulse - 0.5) * 3 * intensityMultiplier;
+            mark.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+            mark.style.filter = `drop-shadow(0 0 ${pulse * 15 * intensityMultiplier}px rgba(255, 0, 0, ${pulse * intensityMultiplier}))`;
+            
+            mark.dataset.rotation = rotation;
+        }, 60);
+    }
+
+    // Initialize burn marks if user has been scared before
+    if (hasBeenScared && !burnMarksCreated) {
+        setTimeout(() => {
+            createBurnMarks();
+            burnMarksCreated = true;
+        }, 1000);
+    }
 
     let lastScareTime = 0;
     let isScaring = false;

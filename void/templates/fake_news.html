@@ -1,0 +1,418 @@
+{% extends "layout.html" %}
+
+{% block title %}The Void Times - Breaking News{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<style>
+    body { 
+        cursor: auto; 
+        background: #f9f9f9;
+        color: #333;
+    }
+
+    .news-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        background: #fff;
+        min-height: 100vh;
+    }
+
+    .news-header {
+        text-align: center;
+        border-bottom: 3px double #333;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+
+    .news-title {
+        font-family: 'Georgia', serif;
+        font-size: 3rem;
+        font-weight: bold;
+        letter-spacing: 2px;
+        margin: 0;
+    }
+
+    .news-subtitle {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 10px;
+    }
+
+    .article-header {
+        margin-bottom: 30px;
+    }
+
+    .article-headline {
+        font-family: 'Georgia', serif;
+        font-size: 2.5rem;
+        font-weight: bold;
+        line-height: 1.2;
+        margin: 0 0 15px 0;
+    }
+
+    .article-meta {
+        font-size: 0.85rem;
+        color: #666;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .article-body {
+        font-family: 'Georgia', serif;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: #333;
+    }
+
+    .article-body p {
+        margin-bottom: 1.5rem;
+    }
+
+    .thief-character {
+        position: fixed;
+        width: 60px;
+        height: 80px;
+        z-index: 10000;
+        cursor: pointer;
+        user-select: none;
+        pointer-events: auto;
+        filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.5));
+        transition: filter 0.2s;
+    }
+
+    .thief-character:hover {
+        filter: drop-shadow(0 0 20px rgba(255, 0, 0, 1));
+        transform: scale(1.2);
+    }
+
+    .thief-body {
+        position: absolute;
+        width: 40px;
+        height: 50px;
+        background: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
+        border-radius: 20px 20px 10px 10px;
+        left: 10px;
+        top: 20px;
+        border: 2px solid #333;
+    }
+
+    .thief-head {
+        position: absolute;
+        width: 35px;
+        height: 35px;
+        background: radial-gradient(circle at 30% 30%, #2a2a2a, #0a0a0a);
+        border-radius: 50%;
+        left: 12.5px;
+        top: 0;
+        border: 2px solid #333;
+    }
+
+    .thief-eye {
+        position: absolute;
+        width: 8px;
+        height: 12px;
+        background: #ff0000;
+        border-radius: 50%;
+        top: 12px;
+        box-shadow: 0 0 8px #ff0000, inset 0 2px 4px rgba(0,0,0,0.5);
+        animation: eye-glow 1.5s ease-in-out infinite;
+    }
+
+    .thief-eye.left { left: 8px; }
+    .thief-eye.right { right: 8px; }
+
+    @keyframes eye-glow {
+        0%, 100% { 
+            box-shadow: 0 0 8px #ff0000, inset 0 2px 4px rgba(0,0,0,0.5);
+            height: 12px;
+        }
+        10%, 20% {
+            height: 2px;
+            box-shadow: 0 0 4px #ff0000;
+        }
+        50% { 
+            box-shadow: 0 0 15px #ff0000, 0 0 25px #ff0000, inset 0 2px 4px rgba(0,0,0,0.5);
+            height: 12px;
+        }
+    }
+
+    .thief-mouth {
+        position: absolute;
+        width: 15px;
+        height: 8px;
+        border: 2px solid #ff0000;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        top: 22px;
+        animation: mouth-open 0.3s ease-in-out infinite;
+    }
+
+    @keyframes mouth-open {
+        0%, 100% { height: 8px; }
+        50% { height: 12px; }
+    }
+
+    .thief-arm {
+        position: absolute;
+        width: 15px;
+        height: 30px;
+        background: linear-gradient(90deg, #1a1a1a, #0a0a0a);
+        border-radius: 8px;
+        top: 25px;
+        border: 1px solid #333;
+    }
+
+    .thief-arm.left {
+        left: -5px;
+        transform: rotate(-30deg);
+        animation: arm-grab 0.5s ease-in-out infinite;
+    }
+
+    .thief-arm.right {
+        right: -5px;
+        transform: rotate(30deg);
+        animation: arm-grab 0.5s ease-in-out infinite 0.25s;
+    }
+
+    @keyframes arm-grab {
+        0%, 100% { transform: rotate(-30deg); }
+        50% { transform: rotate(-50deg); }
+    }
+
+    .thief-arm.right {
+        animation-name: arm-grab-right;
+    }
+
+    @keyframes arm-grab-right {
+        0%, 100% { transform: rotate(30deg); }
+        50% { transform: rotate(50deg); }
+    }
+
+    .thief-leg {
+        position: absolute;
+        width: 12px;
+        height: 20px;
+        background: #0a0a0a;
+        border-radius: 6px;
+        top: 65px;
+        border: 1px solid #333;
+        animation: leg-walk 0.4s ease-in-out infinite;
+    }
+
+    .thief-leg.left { 
+        left: 15px;
+    }
+
+    .thief-leg.right { 
+        right: 15px;
+        animation-delay: 0.2s;
+    }
+
+    @keyframes leg-walk {
+        0%, 100% { transform: rotate(0deg); }
+        50% { transform: rotate(15deg); }
+    }
+
+    .stolen-letter {
+        position: fixed;
+        pointer-events: none;
+        transition: all 0.5s ease;
+        z-index: 9999;
+    }
+
+    @keyframes run-across {
+        from { left: -100px; }
+        to { left: 100vw; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="thief-character" id="thief"></div>
+
+<div class="news-container">
+    <div class="news-header">
+        <h1 class="news-title">THE VOID TIMES</h1>
+        <div class="news-subtitle">All The News That's Fit to Scream • November 24, 2025</div>
+    </div>
+
+    <article>
+        <div class="article-header">
+            <h1 class="article-headline" id="headline">Local Resident Reports Hearing "Echoes" From Nowhere</h1>
+            <div class="article-meta">
+                By <strong>Anonymous Correspondent</strong> | Published: Today, 2:47 AM
+            </div>
+        </div>
+
+        <div class="article-body" id="article-text">
+            <p>In a bizarre turn of events, multiple residents in the downtown area have reported experiencing auditory phenomena they describe as "screams from the void." The incidents, which began approximately three weeks ago, have left local authorities baffled.</p>
+
+            <p>"At first, I thought I was losing my mind," said one resident who wished to remain anonymous. "But then my neighbor mentioned hearing the same thing. It's like someone is screaming, but the sound is coming from everywhere and nowhere at once."</p>
+
+            <p>Dr. Sarah Chen, a psychology professor at the local university, suggests the phenomenon could be a case of mass psychogenic illness. "When people are under stress, they can experience shared delusions," Dr. Chen explained. "However, the consistency of these reports is unusual."</p>
+
+            <p>The local police department has received over fifty calls about the mysterious sounds. Officer Michael Torres stated, "We've investigated every report thoroughly. We've found no source for these alleged screams. No speakers, no recordings, nothing."</p>
+
+            <p>Some residents have taken to documenting their experiences online, creating a community of individuals who claim to have "entered the void." The group shares transcripts of the screams they've heard, many of which contain disturbing or nonsensical content.</p>
+
+            <p>Environmental scientist Dr. James Wright offers a different explanation: "It could be infrasound—extremely low-frequency sound waves that humans can't consciously hear but which can cause feelings of unease and even auditory hallucinations."</p>
+
+            <p>Despite various theories, no definitive explanation has emerged. The phenomenon continues to occur sporadically, with witnesses reporting the screams at all hours of the day and night. Authorities advise anyone experiencing these sounds to report them immediately.</p>
+
+            <p>As investigations continue, one thing is certain: the mystery of the void's screams has captivated—and terrified—the community. Whether supernatural, psychological, or environmental in nature, residents are demanding answers.</p>
+
+            <p>This is a developing story. Updates will be provided as more information becomes available.</p>
+        </div>
+    </article>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const thief = document.getElementById('thief');
+    const articleText = document.getElementById('article-text');
+    let isRunning = false;
+    let stolenLetters = [];
+
+    // Creepy ASCII monster frames (smaller for news page)
+    const monsterFrames = [
+        ` ▓▓▓
+▓◉▓◉▓
+ ▓╰╯▓
+ ▓▓▓▓`,
+        ` ▓▓▓
+▓⦿▓⦿▓
+ ▓══▓
+ ▓▓▓▓`,
+        ` ▓▓▓
+▓●▓●▓
+ ▓─▓
+ ▓▓▓▓`
+    ];
+
+    let currentFrame = 0;
+    
+    // Animate the monster
+    function animateMonster() {
+        thief.textContent = monsterFrames[currentFrame];
+        currentFrame = (currentFrame + 1) % monsterFrames.length;
+    }
+
+    // Start monster animation
+    animateMonster();
+    setInterval(animateMonster, 250);
+
+    // Position thief randomly at start
+    thief.style.left = `${Math.random() * 80}%`;
+    thief.style.top = `${Math.random() * 80}%`;
+
+    // Thief movement and letter stealing
+    function thiefRun() {
+        if (isRunning) return;
+        isRunning = true;
+
+        // Random direction
+        const startX = Math.random() * 100;
+        const startY = Math.random() * 100;
+        const endX = Math.random() * 100;
+        const endY = Math.random() * 100;
+
+        thief.style.left = `${startX}vw`;
+        thief.style.top = `${startY}vh`;
+
+        // Animate to end position
+        thief.style.transition = 'all 2s linear';
+        thief.style.left = `${endX}vw`;
+        thief.style.top = `${endY}vh`;
+
+        // Steal letters during run
+        setTimeout(stealRandomLetter, 500);
+        setTimeout(stealRandomLetter, 1000);
+        setTimeout(stealRandomLetter, 1500);
+
+        setTimeout(() => {
+            isRunning = false;
+        }, 2000);
+    }
+
+    function stealRandomLetter() {
+        // Get all text nodes
+        const walker = document.createTreeWalker(
+            articleText,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+
+        let textNodes = [];
+        let node;
+        while (node = walker.nextNode()) {
+            if (node.textContent.trim().length > 0) {
+                textNodes.push(node);
+            }
+        }
+
+        if (textNodes.length === 0) return;
+
+        // Pick random text node
+        const randomNode = textNodes[Math.floor(Math.random() * textNodes.length)];
+        const text = randomNode.textContent;
+        
+        // Find a letter to steal (not whitespace)
+        const letters = [];
+        for (let i = 0; i < text.length; i++) {
+            if (text[i].trim().length > 0) {
+                letters.push(i);
+            }
+        }
+
+        if (letters.length === 0) return;
+
+        const stealIndex = letters[Math.floor(Math.random() * letters.length)];
+        const stolenChar = text[stealIndex];
+
+        // Create visual stolen letter
+        const letterEl = document.createElement('span');
+        letterEl.textContent = stolenChar;
+        letterEl.className = 'stolen-letter';
+        letterEl.style.left = thief.style.left;
+        letterEl.style.top = thief.style.top;
+        letterEl.style.fontSize = '2rem';
+        letterEl.style.color = '#ff0000';
+        document.body.appendChild(letterEl);
+
+        // Animate to thief
+        setTimeout(() => {
+            letterEl.style.opacity = '0';
+            letterEl.style.transform = 'scale(0.1)';
+        }, 100);
+
+        setTimeout(() => letterEl.remove(), 600);
+
+        // Remove letter from text
+        randomNode.textContent = text.slice(0, stealIndex) + text.slice(stealIndex + 1);
+    }
+
+    // Click on thief -> go to vortex
+    thief.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.location.href = "{{ url_for('void.vortex') }}";
+    });
+
+    // Periodic thief activity
+    setInterval(() => {
+        if (Math.random() < 0.3) {
+            thiefRun();
+        }
+    }, 3000);
+
+    // Initial run
+    setTimeout(thiefRun, 2000);
+</script>
+{% endblock %}
+

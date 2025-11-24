@@ -33,3 +33,11 @@ def get_screams():
     limit = request.args.get('limit', 50, type=int)
     screams = Scream.query.order_by(Scream.created_at.desc()).limit(limit).all()
     return jsonify([s.to_dict() for s in screams])
+
+@bp.route('/news')
+def fake_news():
+    return render_template('fake_news.html')
+
+@bp.route('/vortex')
+def vortex():
+    return render_template('vortex.html')

@@ -203,6 +203,15 @@
         display: none;
         overflow-y: scroll;
         cursor: auto;
+        transition: background-color 0.3s ease;
+    }
+    
+    #wiki-body-text {
+        transition: color 0.3s ease;
+    }
+    
+    #wiki-body-text a {
+        transition: color 0.3s ease;
     }
 
     .mw-page-container {
@@ -827,6 +836,75 @@
         requestAnimationFrame(animateWikiAttack);
     }
 
+    // Wiki Page Creeping Insanity
+    let wikiInsanityLevel = 0;
+    let wikiInsanityInterval = null;
+    
+    function startWikiInsanity() {
+        wikiInsanityLevel = 0;
+        
+        // Get all word spans
+        const allWords = Array.from(document.querySelectorAll('.word-span'));
+        
+        // Clear any existing interval
+        if (wikiInsanityInterval) {
+            clearInterval(wikiInsanityInterval);
+        }
+        
+        wikiInsanityInterval = setInterval(() => {
+            // Exponential growth: starts slow, accelerates rapidly
+            wikiInsanityLevel += 0.02 * Math.pow(1.15, wikiInsanityLevel);
+            const intensity = Math.min(wikiInsanityLevel, 10) / 10; // 0 to 1
+            
+            // Background fade to black (exponential)
+            const bgFade = Math.pow(intensity, 1.5); // More aggressive curve
+            const bgColor = Math.floor(255 * (1 - bgFade));
+            wikiOverlay.style.backgroundColor = `rgb(${bgColor}, ${bgColor}, ${bgColor})`;
+            
+            // Text fade to red (exponential)
+            const redIntensity = Math.pow(intensity, 1.8);
+            const textRed = Math.floor(255 * redIntensity + 50 * (1 - redIntensity));
+            const textOther = Math.floor(50 * (1 - redIntensity));
+            wikiBody.style.color = `rgb(${textRed}, ${textOther}, ${textOther})`;
+            
+            // Links also turn red
+            const links = wikiBody.querySelectorAll('a');
+            links.forEach(link => {
+                link.style.color = `rgb(${textRed}, ${textOther}, ${textOther})`;
+            });
+            
+            // Eyes fade in (behind the page)
+            const eyeOpacity = Math.pow(intensity, 2) * 0.8;
+            eyeGlyph.style.opacity = eyeOpacity;
+            if (eyeOpacity > 0.1) {
+                eyeGlyph.style.display = 'flex';
+                eyeGlyph.style.zIndex = '1'; // Behind wiki content
+            }
+            
+            // Words disappear (exponential - subtle at first, then rapid)
+            const disappearChance = Math.pow(intensity, 3) * 0.15; // Cubic curve for very subtle start
+            allWords.forEach(word => {
+                if (word.style.opacity !== '0' && Math.random() < disappearChance) {
+                    word.style.transition = 'opacity 0.5s ease';
+                    word.style.opacity = '0';
+                }
+            });
+            
+            // Stop when fully insane
+            if (wikiInsanityLevel >= 10) {
+                clearInterval(wikiInsanityInterval);
+            }
+        }, 100); // Update every 100ms
+    }
+    
+    function stopWikiInsanity() {
+        if (wikiInsanityInterval) {
+            clearInterval(wikiInsanityInterval);
+            wikiInsanityInterval = null;
+        }
+        wikiInsanityLevel = 0;
+    }
+
     // Monster shape targets (rough "face")
     const monsterTargets = [
         {x: 30, y: 35}, // Left Eye
@@ -978,6 +1056,9 @@
         if (link) {
             e.preventDefault();
             
+            // Stop the insanity progression
+            stopWikiInsanity();
+            
             // 1. Prepare the Attack
             wikiAttackMode = true;
             
@@ -1008,9 +1089,14 @@
                 
                 setTimeout(() => {
                     wikiOverlay.style.display = 'none';
+                    // Reset wiki styles for next time
+                    wikiOverlay.style.backgroundColor = '#ffffff';
+                    wikiBody.style.color = '#202122';
+                    
                     eyeGlyph.style.display = 'flex';
                     eyeGlyph.style.opacity = '0';
                     eyeGlyph.style.transform = 'translate(-50%, -50%) scale(0.1)';
+                    eyeGlyph.style.zIndex = '100'; // Back to normal z-index
                     
                     // Build intensity for relapse eyes
                     let relapseIntensity = 0;
@@ -1107,6 +1193,9 @@
                 wikiOverlay.style.opacity = '1';
                 wikiOverlay.style.display = 'block';
                 wrapWords(wikiBody);
+                
+                // Start the creeping insanity on the wiki page
+                startWikiInsanity();
             }
         }, 100); // Was 200
     }

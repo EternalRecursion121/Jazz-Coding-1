@@ -1,0 +1,281 @@
+{% extends "layout.html" %}
+
+{% block title %}V O R T E X{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { cursor: none; }
+
+    #vortex-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: radial-gradient(circle at center, #000 0%, #000 50%, #200 100%);
+    }
+
+    #figure {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.5rem;
+        font-family: monospace;
+        color: rgba(200, 200, 200, 0.5);
+        z-index: 1000;
+        cursor: pointer;
+        user-select: none;
+        white-space: pre;
+        line-height: 1.2;
+        text-align: center;
+        filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.2));
+        transition: transform 0.1s, filter 0.1s;
+    }
+
+    #figure:hover {
+        transform: translate(-50%, -50%) scale(1.5);
+        filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.7));
+        color: rgba(255, 100, 100, 0.8);
+    }
+
+    @keyframes figure-pulse {
+        0%, 100% { 
+            filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.3));
+        }
+        50% { 
+            filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.5));
+        }
+    }
+
+    .echo-text {
+        position: absolute;
+        color: rgba(255, 255, 255, 1);
+        font-size: 2.5rem;
+        pointer-events: none;
+        white-space: nowrap;
+        transform-origin: center;
+        animation: spiral-in 2.5s ease-in forwards;
+        text-shadow: 
+            0 0 15px rgba(255, 255, 255, 1), 
+            0 0 30px rgba(255, 100, 100, 0.8),
+            0 0 45px rgba(255, 0, 0, 0.5);
+        font-weight: bold;
+        z-index: 100;
+    }
+
+    @keyframes spiral-in {
+        0% {
+            opacity: 1;
+            transform: translate(0, 0) rotate(0deg) scale(2);
+            filter: blur(0px);
+        }
+        50% {
+            opacity: 1;
+            filter: blur(1px);
+        }
+        100% {
+            opacity: 0;
+            transform: translate(var(--target-x), var(--target-y)) rotate(1440deg) scale(0);
+            filter: blur(3px);
+        }
+    }
+
+    #eye-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    }
+
+    .blinking-eyes {
+        display: flex;
+        gap: 60px;
+    }
+
+    .blink-eye {
+        width: 120px;
+        height: 48px;
+        border: 2px solid rgba(255, 255, 255, 0.8);
+        border-radius: 60% / 90%;
+        position: relative;
+        animation: blink-sequence 2s ease-in-out;
+    }
+
+    .blink-eye::after {
+        content: '';
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.9);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+    }
+
+    @keyframes blink-sequence {
+        0%, 100% { transform: scaleY(1); }
+        45%, 55% { transform: scaleY(0.1); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="vortex-container"></div>
+<div id="figure"></div>
+<div id="eye-overlay">
+    <div class="blinking-eyes">
+        <div class="blink-eye"></div>
+        <div class="blink-eye"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const vortexContainer = document.getElementById('vortex-container');
+    const figure = document.getElementById('figure');
+    const eyeOverlay = document.getElementById('eye-overlay');
+
+    // Creepy ASCII monster frames for animation
+    const monsterFrames = [
+        `   ▓▓▓▓▓
+  ▓ ◉ ▓ ◉ ▓
+  ▓  ▓▓▓  ▓
+   ▓ ╰─╯ ▓
+    ▓▓▓▓▓
+   ╱ ╲ ╱ ╲`,
+        `   ▓▓▓▓▓
+  ▓ ◉ ▓ ◉ ▓
+  ▓  ▓▓▓  ▓
+   ▓ ╰═╯ ▓
+    ▓▓▓▓▓
+  ╱ ╲ ╱ ╲ `,
+        `   ▓▓▓▓▓
+  ▓ ⦿ ▓ ⦿ ▓
+  ▓  ▓▓▓  ▓
+   ▓╰───╯▓
+    ▓▓▓▓▓
+  ╱╲  ╱╲  `,
+        `   ▓▓▓▓▓
+  ▓ ● ▓ ● ▓
+  ▓  ▓▓▓  ▓
+   ▓ ╰─╯ ▓
+    ▓▓▓▓▓
+ ╱  ╲╱  ╲ `
+    ];
+
+    let currentFrame = 0;
+    
+    // Animate the monster
+    function animateMonster() {
+        figure.textContent = monsterFrames[currentFrame];
+        currentFrame = (currentFrame + 1) % monsterFrames.length;
+    }
+
+    // Start monster animation
+    animateMonster();
+    setInterval(animateMonster, 200);
+
+    // Get all screams from the void
+    let screams = [];
+    
+    async function loadScreams() {
+        try {
+            const response = await fetch("{{ url_for('void.get_screams') }}?limit=100");
+            const data = await response.json();
+            screams = data.map(s => s.content);
+            
+            // Start spawning echo text
+            startVortex();
+        } catch (e) {
+            console.error("Could not load screams", e);
+            // Fallback screams
+            screams = [
+                "help me", "i can't escape", "the void calls", "echoes forever",
+                "where am I", "darkness", "screaming", "nobody hears",
+                "lost in the void", "eternal", "forgotten", "silence hurts"
+            ];
+            startVortex();
+        }
+    }
+
+    function createEchoText() {
+        if (screams.length === 0) return;
+
+        const echo = document.createElement('div');
+        echo.className = 'echo-text';
+        echo.textContent = screams[Math.floor(Math.random() * screams.length)];
+
+        // Random starting position around the edge
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.max(window.innerWidth, window.innerHeight);
+        const startX = Math.cos(angle) * distance;
+        const startY = Math.sin(angle) * distance;
+
+        echo.style.left = `${window.innerWidth / 2 + startX}px`;
+        echo.style.top = `${window.innerHeight / 2 + startY}px`;
+
+        // Calculate target (figure's mouth)
+        const figureRect = figure.getBoundingClientRect();
+        const targetX = figureRect.left + figureRect.width / 2 - (window.innerWidth / 2 + startX);
+        const targetY = figureRect.top + figureRect.height / 2 - (window.innerHeight / 2 + startY);
+
+        echo.style.setProperty('--target-x', `${targetX}px`);
+        echo.style.setProperty('--target-y', `${targetY}px`);
+
+        vortexContainer.appendChild(echo);
+
+        // Remove after animation
+        setTimeout(() => echo.remove(), 3000);
+    }
+
+    function startVortex() {
+        // Start with aggressive spawning
+        let spawnInterval = setInterval(createEchoText, 100);
+        
+        // Spawn multiple at once for overwhelming effect
+        setInterval(() => {
+            createEchoText();
+            createEchoText();
+            createEchoText();
+        }, 300);
+        
+        // Increase chaos over time - get even faster
+        let spawnRate = 100;
+        setInterval(() => {
+            spawnRate = Math.max(30, spawnRate - 5);
+            clearInterval(spawnInterval);
+            spawnInterval = setInterval(createEchoText, spawnRate);
+        }, 2000);
+    }
+
+    // Click on figure -> trigger blink and return
+    figure.addEventListener('click', () => {
+        // Stop vortex
+        vortexContainer.innerHTML = '';
+        figure.style.display = 'none';
+        
+        // Show eyes blinking
+        eyeOverlay.style.display = 'flex';
+        
+        // Return to scream page with "BLINK" placeholder after animation
+        setTimeout(() => {
+            window.location.href = "{{ url_for('void.index') }}?p=BLINK";
+        }, 2000);
+    });
+
+    // Initialize
+    loadScreams();
+</script>
+{% endblock %}
+
