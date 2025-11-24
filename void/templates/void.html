@@ -156,32 +156,158 @@
         animation: shake 0.4s infinite;
     }
 
-    /* Fake Wikipedia Overlay */
+    /* Fake Wikipedia Overlay - High Fidelity */
     #fake-wiki-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: #fff;
+        background: #ffffff;
         color: #202122;
         font-family: sans-serif;
         z-index: 9999;
         display: none;
-        overflow: hidden;
-        padding: 20px;
-        box-sizing: border-box;
+        overflow-y: scroll;
         cursor: auto;
     }
+
+    .mw-page-container {
+        display: flex;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0;
+    }
+
+    .mw-sidebar {
+        width: 176px;
+        padding: 20px 0;
+        flex-shrink: 0;
+        font-size: 0.875em;
+    }
+
+    .mw-logo {
+        display: block;
+        width: 135px;
+        height: 135px;
+        margin: 0 auto 20px;
+        background-image: url('https://upload.wikimedia.org/wikipedia/en/8/80/Wikipedia-logo-v2.svg');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        opacity: 0.9;
+    }
+
+    .mw-sidebar-list {
+        list-style: none;
+        padding: 0 12px;
+        margin: 0;
+    }
+
+    .mw-sidebar-list li {
+        margin-bottom: 6px;
+    }
+
+    .mw-sidebar-list a {
+        color: #0645ad;
+        text-decoration: none;
+    }
+
+    .mw-sidebar-list a:hover {
+        text-decoration: underline;
+    }
+
+    .mw-content-container {
+        flex-grow: 1;
+        padding: 20px 40px;
+        background: #fff;
+        border-left: 1px solid #a7d7f9;
+        position: relative;
+    }
+
+    .mw-header {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 30px;
+        font-size: 0.8em;
+        gap: 10px;
+    }
+
+    .mw-header a { color: #0645ad; text-decoration: none; }
+
+    .firstHeading {
+        font-family: 'Linux Libertine', 'Georgia', 'Times', serif;
+        font-size: 2.4em;
+        font-weight: normal;
+        border-bottom: 1px solid #a2a9b1;
+        margin-bottom: 0.2em;
+        padding-bottom: 0;
+        line-height: 1.3;
+    }
+
+    .mw-body-content {
+        font-size: 0.95em;
+        line-height: 1.6;
+        color: #202122;
+    }
+
+    .mw-body-content p { margin: 0.5em 0 1em; }
+    .mw-body-content h2 { 
+        font-family: 'Linux Libertine', 'Georgia', 'Times', serif;
+        font-weight: normal;
+        font-size: 1.8em;
+        border-bottom: 1px solid #a2a9b1;
+        margin: 1em 0 0.5em;
+        padding-bottom: 0.2em;
+    }
+
+    .mw-body-content a { color: #3366cc; text-decoration: none; }
+    .mw-body-content a:hover { text-decoration: underline; }
+
+    .infobox {
+        border: 1px solid #a2a9b1;
+        background-color: #f8f9fa;
+        color: #202122;
+        margin: 0.5em 0 0.5em 1em;
+        padding: 0.2em;
+        float: right;
+        clear: right;
+        width: 300px;
+        font-size: 88%;
+        line-height: 1.5em;
+    }
     
-    #fake-wiki-overlay a { color: #3366cc; text-decoration: none; }
-    #fake-wiki-overlay a:hover { text-decoration: underline; text-shadow: none; }
+    .infobox-header {
+        text-align: center;
+        background-color: #e1e1e1;
+        font-weight: bold;
+        padding: 5px;
+    }
+
+    .infobox-image {
+        padding: 10px;
+        text-align: center;
+    }
     
-    .wiki-header { border-bottom: 1px solid #a7d7f9; padding-bottom: 0.5em; margin-bottom: 1em; }
-    .wiki-logo { font-family: 'Linux Libertine', 'Georgia', 'Times', serif; font-size: 1.8em; margin-bottom: 5px; }
-    .wiki-title { font-family: 'Linux Libertine', 'Georgia', 'Times', serif; font-size: 2.2em; border-bottom: 1px solid #a2a9b1; margin-bottom: 0.5em; padding-bottom: 0.2em; }
-    .wiki-content { font-size: 0.95em; line-height: 1.6; max-width: 800px; }
-    .wiki-sidebar { float: right; border: 1px solid #a2a9b1; background: #f8f9fa; padding: 1em; width: 250px; margin-left: 1em; font-size: 0.9em; }
+    .infobox-image img {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #ccc;
+    }
+
+    .word-span {
+        display: inline-block;
+        position: relative;
+        white-space: pre;
+        transition: color 0.2s;
+    }
+
+    /* "Attack" classes */
+    .attacking-word {
+        position: fixed !important;
+        z-index: 10000;
+        pointer-events: none;
+    }
     
     .wait-what {
         position: absolute;
@@ -225,22 +351,84 @@
 <a href="{{ url_for('void.index') }}" class="return-link" id="wake-up-btn">WAKE UP</a>
 
 <div id="fake-wiki-overlay">
-    <div class="wiki-header">
-        <div class="wiki-logo">Wikipedia</div>
-        <small>The Free Encyclopedia</small>
-    </div>
-    <div class="wiki-content">
-        <div class="wiki-sidebar">
-            <strong>Void Entity</strong><br>
-            <small>Class: Keter</small><br>
-            <hr>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a3/June_odd-eyed-cat.jpg" style="width:100%; filter: grayscale(100%) contrast(200%);" alt="Subject">
+    <div class="mw-page-container">
+        <div class="mw-sidebar">
+            <a href="#" class="mw-logo"></a>
+            <ul class="mw-sidebar-list">
+                <li><a href="#">Main page</a></li>
+                <li><a href="#">Contents</a></li>
+                <li><a href="#">Current events</a></li>
+                <li><a href="#">Random article</a></li>
+                <li><a href="#">About Wikipedia</a></li>
+                <li><a href="#">Contact us</a></li>
+                <li><a href="#">Donate</a></li>
+            </ul>
+            <div style="margin-top: 20px; padding-left: 12px; font-size: 0.85em; color: #54595d;">
+                <strong>Contribute</strong>
+                <ul class="mw-sidebar-list" style="margin-top: 5px;">
+                    <li><a href="#">Help</a></li>
+                    <li><a href="#">Learn to edit</a></li>
+                    <li><a href="#">Community portal</a></li>
+                    <li><a href="#">Recent changes</a></li>
+                    <li><a href="#">Upload file</a></li>
+                </ul>
+            </div>
         </div>
-        <h1 class="wiki-title">Semantic Saturation</h1>
-        <p><b>Semantic saturation</b> (also known as <b>verbal satiation</b>) is a psychological phenomenon in which repetition causes a word or phrase to temporarily lose meaning for the listener, who then perceives the speech as repeated meaningless sounds.</p>
-        <p>The phenomenon was first described by <a href="#">Leon Jakobovits James</a> in his 1962 doctoral dissertation at McGill University. He demonstrated that it is possible to reach a state of "experimental neurosis" through repetitive exposure to textual stimuli.</p>
-        <h3>Process</h3>
-        <p>The inspection of the void results in a breakdown of cognitive barriers. Subjects report hearing voices, specifically "screams" that form cohesive <a href="#">gestalts</a>.</p>
+        <div class="mw-content-container">
+            <div class="mw-header">
+                <a href="#">Not logged in</a>
+                <a href="#">Talk</a>
+                <a href="#">Contributions</a>
+                <a href="#">Create account</a>
+                <a href="#">Log in</a>
+            </div>
+            <div class="mw-body-content" id="wiki-body-text">
+                <div class="infobox">
+                    <div class="infobox-header">Semantic satiation</div>
+                    <div class="infobox-image">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/June_odd-eyed-cat.jpg/440px-June_odd-eyed-cat.jpg" alt="An odd-eyed cat">
+                        <div style="font-size: 0.9em; padding-top: 5px;">A visual representation of dissociation.</div>
+                    </div>
+                    <div style="padding: 5px;">
+                        <strong>Other names</strong><br>
+                        Verbal satiation
+                    </div>
+                    <div style="padding: 5px; background: #f8f9fa;">
+                        <strong>Specialty</strong><br>
+                        <a href="#">Psychology</a>, <a href="#">Cognitive science</a>
+                    </div>
+                </div>
+                
+                <h1 class="firstHeading">Semantic satiation</h1>
+                <div style="font-size: 0.85em; color: #54595d; margin-bottom: 1em;">From Wikipedia, the free encyclopedia</div>
+                
+                <p><b>Semantic satiation</b> (also known as <b>verbal satiation</b>) is a psychological phenomenon in which repetition causes a word or phrase to temporarily lose meaning for the listener, who then perceives the speech as repeated meaningless sounds. Extended inspection or analysis (staring at the word or phrase for a long time) in place of repetition also produces the same effect.</p>
+                
+                <p>The phenomenon was first described and named by <a href="#">Leon Jakobovits James</a> in his 1962 doctoral dissertation at <a href="#">McGill University</a>. Prior to that, the expression "verbal satiation" had been used along with terms such as "cortical inhibition" and "reactive inhibition" to describe the effect.</p>
+                
+                <h2>History and research</h2>
+                <p>Jakobovits James presented several experimental tasks demonstrating the operation of the semantic satiation effect. He argued that it is a form of reactive inhibition that applies to the cognitive processing of verbal symbols. According to his theory, when a verbal cell (a neural circuit representing the meaning of a word) is repeatedly fired, its ability to fire is reduced, resulting in a reduction of the intensity of the meaning.</p>
+                <p>Jakobovits James cites the work of <a href="#">Titchener</a> (1915), who wrote: "Repeat aloud some word—the better, some common word... and the meaning drops out of it; the word becomes a mere sound, a pattern of sensation on the ear, a physiological event in the brain, with no psychological significance whatsoever."</p>
+                
+                <h2>Applications</h2>
+                <p>Semantic satiation has been used in the treatment of <a href="#">stuttering</a>. The repetition of stuttered words can lead to a reduction in the intensity of the negative emotion attached to the speech act.</p>
+                <p>In the study of <a href="#">slang</a>, semantic satiation is often cited as a mechanism by which terms lose their original taboo or shocking quality, becoming part of common discourse. For instance, the word "void" has lost its original terror-inducing connotation through overuse in online communities.</p>
+                
+                <h2>See also</h2>
+                <ul>
+                    <li><a href="#">Gestaltzerfall</a></li>
+                    <li><a href="#">Jamais vu</a></li>
+                    <li><a href="#">Mantra</a></li>
+                    <li><a href="#">Olfactory fatigue</a></li>
+                    <li><a href="#">The Void</a></li>
+                </ul>
+                
+                <div style="margin-top: 30px; border-top: 1px solid #a2a9b1; padding-top: 10px; font-size: 0.85em; color: #54595d;">
+                    This page was last edited on 24 November 2025, at 11:52 (UTC).<br>
+                    Text is available under the <a href="#">Creative Commons Attribution-ShareAlike License 4.0</a>; additional terms may apply.
+                </div>
+            </div>
+        </div>
     </div>
     <div class="wait-what">wait what?</div>
 </div>
@@ -252,11 +440,72 @@
     const wakeUpBtn = document.getElementById('wake-up-btn');
     const fallDeeperBtn = document.getElementById('fall-deeper-btn');
     const wikiOverlay = document.getElementById('fake-wiki-overlay');
+    const wikiBody = document.getElementById('wiki-body-text');
     const eyeGlyph = document.getElementById('eye-glyph');
     let sessionStartTime = Date.now();
     let monsterMode = false;
     let chaosLevel = 0;
+    let wikiAttackMode = false;
     
+    // Helper to wrap all words in spans for animation
+    function wrapWords(element) {
+        if (element.hasChildNodes()) {
+            element.childNodes.forEach(child => {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    if (child.textContent.trim().length > 0) {
+                        const newHtml = child.textContent
+                            .split(/(\s+)/)
+                            .map(part => part.trim().length > 0 ? `<span class="word-span">${part}</span>` : part)
+                            .join('');
+                        const temp = document.createElement('span');
+                        temp.innerHTML = newHtml;
+                        child.replaceWith(...temp.childNodes);
+                    }
+                } else if (child.nodeType === Node.ELEMENT_NODE && !child.classList.contains('infobox')) {
+                    wrapWords(child);
+                }
+            });
+        }
+    }
+
+    // Attack animation loop for wiki words
+    function animateWikiAttack() {
+        if (!wikiAttackMode) return;
+        
+        const words = document.querySelectorAll('.attacking-word');
+        words.forEach(word => {
+            let x = parseFloat(word.dataset.x);
+            let y = parseFloat(word.dataset.y);
+            let vx = parseFloat(word.dataset.vx);
+            let vy = parseFloat(word.dataset.vy);
+            
+            // Attract to each other (clustering) or swarm center
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            
+            vx += (cx - x) * 0.0005;
+            vy += (cy - y) * 0.0005;
+            
+            // Random jitter
+            vx += (Math.random() - 0.5) * 2;
+            vy += (Math.random() - 0.5) * 2;
+            
+            x += vx;
+            y += vy;
+            
+            word.dataset.vx = vx;
+            word.dataset.vy = vy;
+            word.dataset.x = x;
+            word.dataset.y = y;
+            
+            word.style.left = `${x}px`;
+            word.style.top = `${y}px`;
+            word.style.transform = `rotate(${Math.random() * 360}deg)`;
+        });
+        
+        requestAnimationFrame(animateWikiAttack);
+    }
+
     // Monster shape targets (rough "face")
     const monsterTargets = [
         {x: 30, y: 35}, // Left Eye
@@ -393,6 +642,70 @@
         requestAnimationFrame(animate);
     }
 
+    // Handle Wiki Links - Relapse Logic
+    wikiOverlay.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (link) {
+            e.preventDefault();
+            
+            // 1. Prepare the Attack
+            wikiAttackMode = true;
+            
+            // Select all word spans
+            const spans = document.querySelectorAll('.word-span');
+            spans.forEach(span => {
+                const rect = span.getBoundingClientRect();
+                span.classList.add('attacking-word');
+                // Set initial fixed position matches current flow position
+                span.style.left = `${rect.left}px`;
+                span.style.top = `${rect.top}px`;
+                span.dataset.x = rect.left;
+                span.dataset.y = rect.top;
+                span.dataset.vx = (Math.random() - 0.5) * 10; // Initial explosion
+                span.dataset.vy = (Math.random() - 0.5) * 10;
+                span.style.color = '#000';
+            });
+
+            // Start animation loop
+            animateWikiAttack();
+
+            // 2. Relapse Sequence (Delayed)
+            setTimeout(() => {
+                document.body.style.transition = 'background 2s';
+                document.body.style.background = '#000';
+                wikiOverlay.style.transition = 'opacity 2s';
+                wikiOverlay.style.opacity = '0';
+                
+                setTimeout(() => {
+                    wikiOverlay.style.display = 'none';
+                    eyeGlyph.style.display = 'flex';
+                    eyeGlyph.style.opacity = '0';
+                    eyeGlyph.style.transform = 'translate(-50%, -50%) scale(0.1)';
+                    
+                    // Eyes return aggressively
+                    setTimeout(() => {
+                        eyeGlyph.style.transition = 'all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                        eyeGlyph.style.opacity = '1';
+                        eyeGlyph.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                        document.body.classList.add('eyes-open');
+                        
+                        // Play harsh sound if possible, then reset
+                        setTimeout(() => {
+                            // Corrupt placeholder logic
+                            const original = "SCREAM";
+                            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ@#%&?!";
+                            let corrupted = original.split('');
+                            const idx = Math.floor(Math.random() * original.length);
+                            corrupted[idx] = chars[Math.floor(Math.random() * chars.length)];
+                            
+                            window.location.href = "{{ url_for('void.index') }}?p=" + encodeURIComponent(corrupted.join(''));
+                        }, 1500);
+                    }, 500);
+                }, 2000);
+            }, 1500); // Wait 1.5s for the attack to be visible before fading
+        }
+    });
+
     function triggerFallDeeper() {
         monsterMode = true;
         fallDeeperBtn.style.display = 'none';
@@ -407,15 +720,13 @@
                 document.body.style.background = '#fff';
                 voidContainer.style.display = 'none';
                 eyeGlyph.style.display = 'none';
+                
+                // Show overlay and prep words
                 wikiOverlay.style.display = 'block';
+                wrapWords(wikiBody);
             }
         }, 200);
     }
-    
-    fallDeeperBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        triggerFallDeeper();
-    });
 
     function setEyesOpen(state) {
         document.body.classList.toggle('eyes-open', state);
@@ -433,6 +744,14 @@
             }
         }
     }
+
+    // Fall Deeper Button Logic
+    fallDeeperBtn.style.pointerEvents = 'auto'; // Ensure clickable
+    fallDeeperBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log("Fall deeper triggered");
+        triggerFallDeeper();
+    });
 
     wakeUpBtn.addEventListener('click', (e) => {
         e.preventDefault();

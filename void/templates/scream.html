@@ -131,7 +131,7 @@
 </div>
 <div class="container" id="main-container">
     <form id="scream-form">
-        <input type="text" id="scream-input" placeholder="SCREAM" autocomplete="off" maxlength="140" autofocus>
+        <input type="text" id="scream-input" placeholder="{{ placeholder|default('SCREAM') }}" autocomplete="off" maxlength="140" autofocus>
     </form>
     <div class="feedback" id="feedback"></div>
     

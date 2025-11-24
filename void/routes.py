@@ -5,7 +5,8 @@ bp = Blueprint('void', __name__, template_folder='templates')
 
 @bp.route('/')
 def index():
-    return render_template('scream.html')
+    placeholder = request.args.get('p', 'SCREAM')
+    return render_template('scream.html', placeholder=placeholder)
 
 @bp.route('/void')
 def enter_void():
