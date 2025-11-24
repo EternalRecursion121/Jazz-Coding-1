@@ -175,10 +175,13 @@
     const container = document.getElementById('main-container');
     const scareOverlay = document.getElementById('jumpscare-overlay');
 
-    // Track if user has been scared (for burn-in marks)
-    let hasBeenScared = localStorage.getItem('hasBeenScared') === 'true';
+    // Track if user has completed the full loop (for burn-in marks)
+    // Check localStorage for completion flag
+    let hasCompletedLoop = localStorage.getItem('hasCompletedLoop') === 'true';
     let burnMarks = [];
     let burnMarksCreated = false;
+    
+    console.log('Initial hasCompletedLoop:', hasCompletedLoop);
 
     // Jump Scare Logic
     const triggerScare = () => {
@@ -209,17 +212,6 @@
             scareOverlay.style.display = 'none';
             document.body.style.filter = 'none';
             isScaring = false;
-            
-            // Create burn marks after FIRST scare
-            if (!hasBeenScared && !burnMarksCreated) {
-                hasBeenScared = true;
-                localStorage.setItem('hasBeenScared', 'true');
-                // Delay burn mark appearance slightly
-                setTimeout(() => {
-                    createBurnMarks();
-                    burnMarksCreated = true;
-                }, 1000);
-            }
         }, 200);
     };
 
@@ -300,12 +292,45 @@
         }, 60);
     }
 
-    // Initialize burn marks if user has been scared before
-    if (hasBeenScared && !burnMarksCreated) {
+    // Check if returning from vortex - placeholder will be corrupted/modified from "SCREAM"
+    const urlParams = new URLSearchParams(window.location.search);
+    const placeholder = urlParams.get('p');
+    
+    console.log('Page loaded with placeholder:', placeholder);
+    console.log('hasCompletedLoop from localStorage:', hasCompletedLoop);
+    
+    // CRITICAL: Only create burn marks if placeholder exists AND is NOT the default "SCREAM"
+    // This means they've been through the void loop which corrupts the word
+    const isCorrupted = placeholder && placeholder !== 'SCREAM';
+    
+    if (isCorrupted) {
+        console.log('✓ Loop completed! Placeholder is corrupted:', placeholder);
+        console.log('Setting flag and creating burn marks');
+        hasCompletedLoop = true;
+        localStorage.setItem('hasCompletedLoop', 'true');
+        // Create marks after a short delay
         setTimeout(() => {
-            createBurnMarks();
-            burnMarksCreated = true;
+            if (!burnMarksCreated) {
+                console.log('Creating burn marks now');
+                createBurnMarks();
+                burnMarksCreated = true;
+            }
         }, 1000);
+    } else if (hasCompletedLoop) {
+        // Only if they've completed before AND we have the flag
+        console.log('✓ User has completed loop before, showing burn marks');
+        setTimeout(() => {
+            if (!burnMarksCreated) {
+                console.log('Creating burn marks now');
+                createBurnMarks();
+                burnMarksCreated = true;
+            }
+        }, 1000);
+    } else {
+        console.log('✗ No burn marks - user has not completed loop yet');
+        console.log('  - placeholder is:', placeholder || 'SCREAM (default)');
+        console.log('  - isCorrupted:', isCorrupted);
+        console.log('  - hasCompletedLoop:', hasCompletedLoop);
     }
 
     let lastScareTime = 0;

@@ -73,149 +73,204 @@
 
     .thief-character {
         position: fixed;
-        width: 60px;
-        height: 80px;
+        width: 45px;
+        height: 70px;
         z-index: 10000;
         cursor: pointer;
         user-select: none;
         pointer-events: auto;
-        filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.5));
+        filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.9)) contrast(1.5);
         transition: filter 0.2s;
+        transform-origin: center;
+        animation: cursed-twitch 0.3s infinite;
     }
 
     .thief-character:hover {
-        filter: drop-shadow(0 0 20px rgba(255, 0, 0, 1));
-        transform: scale(1.2);
+        filter: drop-shadow(0 0 25px rgba(255, 0, 0, 1)) contrast(2) brightness(0.5);
+        transform: scale(1.4) rotate(5deg);
+    }
+
+    @keyframes cursed-twitch {
+        0%, 100% { transform: translateX(0) skewY(0deg); }
+        25% { transform: translateX(-1px) skewY(1deg); }
+        50% { transform: translateX(1px) skewY(-1deg); }
+        75% { transform: translateX(-1px) skewY(2deg); }
     }
 
     .thief-body {
         position: absolute;
-        width: 40px;
-        height: 50px;
-        background: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
-        border-radius: 20px 20px 10px 10px;
-        left: 10px;
-        top: 20px;
-        border: 2px solid #333;
+        width: 20px;
+        height: 42px;
+        background: #000000;
+        border-radius: 3px 3px 5px 5px;
+        left: 12px;
+        top: 18px;
+        border: 2px solid #0a0a0a;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 1);
+        animation: body-distort 0.5s infinite;
+    }
+
+    @keyframes body-distort {
+        0%, 100% { transform: scaleY(1) scaleX(1); }
+        50% { transform: scaleY(1.1) scaleX(0.9); }
     }
 
     .thief-head {
         position: absolute;
-        width: 35px;
-        height: 35px;
-        background: radial-gradient(circle at 30% 30%, #2a2a2a, #0a0a0a);
-        border-radius: 50%;
-        left: 12.5px;
-        top: 0;
-        border: 2px solid #333;
+        width: 28px;
+        height: 32px;
+        background: #000000;
+        border-radius: 40% 40% 50% 50%;
+        left: 8px;
+        top: -2px;
+        border: 2px solid #0a0a0a;
+        box-shadow: inset 0 0 15px rgba(0, 0, 0, 1);
+        animation: head-wobble 0.4s infinite;
+    }
+
+    @keyframes head-wobble {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-3deg); }
+        75% { transform: rotate(3deg); }
     }
 
     .thief-eye {
         position: absolute;
-        width: 8px;
-        height: 12px;
+        width: 7px;
+        height: 11px;
         background: #ff0000;
-        border-radius: 50%;
-        top: 12px;
-        box-shadow: 0 0 8px #ff0000, inset 0 2px 4px rgba(0,0,0,0.5);
-        animation: eye-glow 1.5s ease-in-out infinite;
+        border-radius: 50% 50% 30% 30%;
+        top: 10px;
+        box-shadow: 0 0 10px #ff0000, inset 0 2px 5px rgba(0,0,0,1);
+        animation: cursed-eye-glow 0.8s ease-in-out infinite;
     }
 
-    .thief-eye.left { left: 8px; }
-    .thief-eye.right { right: 8px; }
+    .thief-eye.left { 
+        left: 4px; 
+        animation-delay: 0.1s;
+    }
+    .thief-eye.right { 
+        right: 4px; 
+    }
 
-    @keyframes eye-glow {
+    @keyframes cursed-eye-glow {
         0%, 100% { 
-            box-shadow: 0 0 8px #ff0000, inset 0 2px 4px rgba(0,0,0,0.5);
-            height: 12px;
+            box-shadow: 0 0 10px #ff0000, inset 0 2px 5px rgba(0,0,0,1);
+            height: 11px;
+            transform: scaleX(1);
         }
-        10%, 20% {
+        5%, 15% {
             height: 2px;
-            box-shadow: 0 0 4px #ff0000;
+            box-shadow: 0 0 5px #ff0000;
+            transform: scaleX(1.3);
         }
         50% { 
-            box-shadow: 0 0 15px #ff0000, 0 0 25px #ff0000, inset 0 2px 4px rgba(0,0,0,0.5);
-            height: 12px;
+            box-shadow: 0 0 20px #ff0000, 0 0 30px #ff0000, inset 0 2px 5px rgba(0,0,0,1);
+            height: 14px;
+            transform: scaleX(0.8);
         }
     }
 
     .thief-mouth {
         position: absolute;
-        width: 15px;
+        width: 14px;
         height: 8px;
+        background: #000000;
         border: 2px solid #ff0000;
         border-top: none;
-        border-radius: 0 0 10px 10px;
+        border-radius: 0 0 50% 50%;
         left: 50%;
         transform: translateX(-50%);
-        top: 22px;
-        animation: mouth-open 0.3s ease-in-out infinite;
+        top: 20px;
+        animation: cursed-mouth-open 0.25s ease-in-out infinite;
+        box-shadow: inset 0 -5px 10px rgba(255, 0, 0, 0.5);
     }
 
-    @keyframes mouth-open {
-        0%, 100% { height: 8px; }
-        50% { height: 12px; }
+    @keyframes cursed-mouth-open {
+        0%, 100% { 
+            height: 8px; 
+            border-radius: 0 0 50% 50%;
+        }
+        50% { 
+            height: 14px;
+            border-radius: 0 0 60% 60%;
+            transform: translateX(-50%) scaleX(1.2);
+        }
     }
 
     .thief-arm {
         position: absolute;
-        width: 15px;
-        height: 30px;
-        background: linear-gradient(90deg, #1a1a1a, #0a0a0a);
-        border-radius: 8px;
-        top: 25px;
-        border: 1px solid #333;
+        width: 6px;
+        height: 26px;
+        background: #000000;
+        border-radius: 2px;
+        top: 20px;
+        border: 1px solid #0a0a0a;
+        animation: cursed-arm-grab 0.3s ease-in-out infinite;
     }
 
     .thief-arm.left {
-        left: -5px;
-        transform: rotate(-30deg);
-        animation: arm-grab 0.5s ease-in-out infinite;
+        left: 0px;
+        transform: rotate(-45deg);
+        transform-origin: top;
     }
 
     .thief-arm.right {
-        right: -5px;
-        transform: rotate(30deg);
-        animation: arm-grab 0.5s ease-in-out infinite 0.25s;
+        right: 0px;
+        transform: rotate(45deg);
+        transform-origin: top;
+        animation-delay: 0.15s;
     }
 
-    @keyframes arm-grab {
-        0%, 100% { transform: rotate(-30deg); }
-        50% { transform: rotate(-50deg); }
+    @keyframes cursed-arm-grab {
+        0%, 100% { 
+            transform: rotate(-45deg) scaleY(1);
+        }
+        50% { 
+            transform: rotate(-70deg) scaleY(1.3);
+        }
     }
 
     .thief-arm.right {
-        animation-name: arm-grab-right;
+        animation-name: cursed-arm-grab-right;
     }
 
-    @keyframes arm-grab-right {
-        0%, 100% { transform: rotate(30deg); }
-        50% { transform: rotate(50deg); }
+    @keyframes cursed-arm-grab-right {
+        0%, 100% { 
+            transform: rotate(45deg) scaleY(1);
+        }
+        50% { 
+            transform: rotate(70deg) scaleY(1.3);
+        }
     }
 
     .thief-leg {
         position: absolute;
-        width: 12px;
-        height: 20px;
-        background: #0a0a0a;
-        border-radius: 6px;
-        top: 65px;
-        border: 1px solid #333;
-        animation: leg-walk 0.4s ease-in-out infinite;
+        width: 6px;
+        height: 18px;
+        background: #000000;
+        border-radius: 2px 2px 3px 3px;
+        top: 58px;
+        border: 1px solid #0a0a0a;
+        animation: cursed-leg-walk 0.25s ease-in-out infinite;
     }
 
     .thief-leg.left { 
-        left: 15px;
+        left: 14px;
     }
 
     .thief-leg.right { 
-        right: 15px;
-        animation-delay: 0.2s;
+        right: 14px;
+        animation-delay: 0.125s;
     }
 
-    @keyframes leg-walk {
-        0%, 100% { transform: rotate(0deg); }
-        50% { transform: rotate(15deg); }
+    @keyframes cursed-leg-walk {
+        0%, 100% { 
+            transform: rotate(0deg) scaleY(1);
+        }
+        50% { 
+            transform: rotate(25deg) scaleY(1.2);
+        }
     }
 
     .stolen-letter {
@@ -233,7 +288,19 @@
 {% endblock %}
 
 {% block content %}
-<div class="thief-character" id="thief"></div>
+<div class="thief-character" id="thief">
+    <div class="thief-head">
+        <div class="thief-eye left"></div>
+        <div class="thief-eye right"></div>
+        <div class="thief-mouth"></div>
+    </div>
+    <div class="thief-body">
+        <div class="thief-arm left"></div>
+        <div class="thief-arm right"></div>
+    </div>
+    <div class="thief-leg left"></div>
+    <div class="thief-leg right"></div>
+</div>
 
 <div class="news-container">
     <div class="news-header">
@@ -273,75 +340,20 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 <script>
     const thief = document.getElementById('thief');
     const articleText = document.getElementById('article-text');
     let isRunning = false;
     let stolenLetters = [];
 
-    // Creepy ASCII monster frames (smaller for news page)
-    const monsterFrames = [
-        ` ▓▓▓
-▓◉▓◉▓
- ▓╰╯▓
- ▓▓▓▓`,
-        ` ▓▓▓
-▓⦿▓⦿▓
- ▓══▓
- ▓▓▓▓`,
-        ` ▓▓▓
-▓●▓●▓
- ▓─▓
- ▓▓▓▓`
-    ];
-
-    let currentFrame = 0;
-    
-    // Animate the monster
-    function animateMonster() {
-        thief.textContent = monsterFrames[currentFrame];
-        currentFrame = (currentFrame + 1) % monsterFrames.length;
-    }
-
-    // Start monster animation
-    animateMonster();
-    setInterval(animateMonster, 250);
-
     // Position thief randomly at start
-    thief.style.left = `${Math.random() * 80}%`;
-    thief.style.top = `${Math.random() * 80}%`;
+    thief.style.left = `${Math.random() * 80 + 10}%`;
+    thief.style.top = `${Math.random() * 70 + 15}%`;
 
-    // Thief movement and letter stealing
-    function thiefRun() {
-        if (isRunning) return;
-        isRunning = true;
-
-        // Random direction
-        const startX = Math.random() * 100;
-        const startY = Math.random() * 100;
-        const endX = Math.random() * 100;
-        const endY = Math.random() * 100;
-
-        thief.style.left = `${startX}vw`;
-        thief.style.top = `${startY}vh`;
-
-        // Animate to end position
-        thief.style.transition = 'all 2s linear';
-        thief.style.left = `${endX}vw`;
-        thief.style.top = `${endY}vh`;
-
-        // Steal letters during run
-        setTimeout(stealRandomLetter, 500);
-        setTimeout(stealRandomLetter, 1000);
-        setTimeout(stealRandomLetter, 1500);
-
-        setTimeout(() => {
-            isRunning = false;
-        }, 2000);
-    }
-
-    function stealRandomLetter() {
-        // Get all text nodes
+    // Get all visible text spans in the article
+    function getAllTextSpans() {
+        const spans = [];
         const walker = document.createTreeWalker(
             articleText,
             NodeFilter.SHOW_TEXT,
@@ -349,19 +361,63 @@
             false
         );
 
-        let textNodes = [];
         let node;
         while (node = walker.nextNode()) {
-            if (node.textContent.trim().length > 0) {
-                textNodes.push(node);
+            if (node.textContent.trim().length > 0 && node.parentElement.offsetParent !== null) {
+                spans.push(node);
             }
         }
+        return spans;
+    }
 
-        if (textNodes.length === 0) return;
+    // Thief movement and letter stealing with Anime.js
+    function thiefRun() {
+        if (isRunning) return;
+        isRunning = true;
 
-        // Pick random text node
-        const randomNode = textNodes[Math.floor(Math.random() * textNodes.length)];
-        const text = randomNode.textContent;
+        // Pick a random word to steal from
+        const textSpans = getAllTextSpans();
+        if (textSpans.length === 0) {
+            isRunning = false;
+            return;
+        }
+
+        const targetNode = textSpans[Math.floor(Math.random() * textSpans.length)];
+        const targetElement = targetNode.parentElement;
+        const rect = targetElement.getBoundingClientRect();
+
+        // Animate thief to the target word
+        anime({
+            targets: thief,
+            left: rect.left + rect.width / 2 - 30,
+            top: rect.top + rect.height / 2 - 40,
+            duration: 1500,
+            easing: 'easeInOutQuad',
+            complete: () => {
+                // Steal multiple letters rapidly
+                stealLetterFromNode(targetNode);
+                setTimeout(() => stealLetterFromNode(targetNode), 200);
+                setTimeout(() => stealLetterFromNode(targetNode), 400);
+                
+                // Move to random position
+                setTimeout(() => {
+                    anime({
+                        targets: thief,
+                        left: `${Math.random() * 80 + 10}%`,
+                        top: `${Math.random() * 70 + 15}%`,
+                        duration: 1000,
+                        easing: 'easeOutQuad',
+                        complete: () => {
+                            isRunning = false;
+                        }
+                    });
+                }, 600);
+            }
+        });
+    }
+
+    function stealLetterFromNode(node) {
+        const text = node.textContent;
         
         // Find a letter to steal (not whitespace)
         const letters = [];
@@ -376,26 +432,49 @@
         const stealIndex = letters[Math.floor(Math.random() * letters.length)];
         const stolenChar = text[stealIndex];
 
+        // Get position of the parent element
+        const rect = node.parentElement.getBoundingClientRect();
+
         // Create visual stolen letter
         const letterEl = document.createElement('span');
         letterEl.textContent = stolenChar;
         letterEl.className = 'stolen-letter';
-        letterEl.style.left = thief.style.left;
-        letterEl.style.top = thief.style.top;
+        letterEl.style.position = 'fixed';
+        letterEl.style.left = `${rect.left + rect.width / 2}px`;
+        letterEl.style.top = `${rect.top + rect.height / 2}px`;
         letterEl.style.fontSize = '2rem';
         letterEl.style.color = '#ff0000';
+        letterEl.style.fontWeight = 'bold';
+        letterEl.style.pointerEvents = 'none';
+        letterEl.style.zIndex = '9999';
         document.body.appendChild(letterEl);
 
-        // Animate to thief
+        // Animate to thief's mouth using Anime.js
+        anime({
+            targets: letterEl,
+            left: thief.offsetLeft + 30,
+            top: thief.offsetTop + 20,
+            scale: 0.2,
+            opacity: 0,
+            duration: 500,
+            easing: 'easeInQuad',
+            complete: () => letterEl.remove()
+        });
+
+        // Remove letter from text with fade effect
+        const charSpan = document.createElement('span');
+        charSpan.textContent = stolenChar;
+        charSpan.style.transition = 'opacity 0.3s';
+        
+        node.textContent = text.slice(0, stealIndex);
+        node.parentElement.appendChild(charSpan);
+        const afterText = document.createTextNode(text.slice(stealIndex + 1));
+        node.parentElement.appendChild(afterText);
+
         setTimeout(() => {
-            letterEl.style.opacity = '0';
-            letterEl.style.transform = 'scale(0.1)';
+            charSpan.style.opacity = '0';
+            setTimeout(() => charSpan.remove(), 300);
         }, 100);
-
-        setTimeout(() => letterEl.remove(), 600);
-
-        // Remove letter from text
-        randomNode.textContent = text.slice(0, stealIndex) + text.slice(stealIndex + 1);
     }
 
     // Click on thief -> go to vortex
