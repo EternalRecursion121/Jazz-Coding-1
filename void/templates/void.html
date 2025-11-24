@@ -27,56 +27,38 @@
         transition: filter 5s ease;
     }
 
-    #eye-glyph {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        display: flex;
-        gap: 60px;
-        opacity: 0.35;
-        pointer-events: auto;
-        filter: blur(0.4px);
-        z-index: 100;
-        transition: opacity 0.4s ease;
+    #face-canvas {
+        display: none;
+    }
+    
+    #fullscreen-eye-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 1500;
     }
 
-    .eye {
-        width: 120px;
+    #camera-video {
+        display: none;
+    }
+    
+    #webcam-canvas {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        width: 64px;
         height: 48px;
-        border: 2px solid rgba(255, 255, 255, 0.4);
-        border-radius: 60% / 90%;
-        position: relative;
-        animation: slowPulse 6s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 2001;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        opacity: 0.1;
     }
+    
 
-    .eye::after {
-        content: '';
-        position: absolute;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.6);
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        box-shadow: 0 0 15px rgba(255, 255, 255, 0.45);
-    }
-
-    .eye.left::after { box-shadow: -6px 0 20px rgba(255,255,255,0.3); }
-    .eye.right::after { box-shadow: 6px 0 20px rgba(255,255,255,0.3); }
-
-    @keyframes slowPulse {
-        0%, 100% { transform: scaleX(1); }
-        50% { transform: scaleX(0.8); }
-    }
-
-    body.eyes-open #eye-glyph {
-        opacity: 0.9;
-        filter: none;
-    }
-
-    body.eyes-open #void-container .scream {
+    body.void-revealed #void-container .scream {
         opacity: 1 !important;
         color: rgba(255, 255, 255, 0.95) !important;
         text-shadow: 0 0 18px rgba(255, 255, 255, 0.6);
@@ -123,10 +105,11 @@
 {% endblock %}
 
 {% block content %}
-<div id="eye-glyph">
-    <div class="eye left"></div>
-    <div class="eye right"></div>
-</div>
+<video id="camera-video" autoplay muted></video>
+<canvas id="webcam-canvas"></canvas>
+<canvas id="face-canvas"></canvas>
+
+<canvas id="fullscreen-eye-canvas"></canvas>
 
 <div id="void-container">
     <!-- Screams will drift here -->
@@ -136,11 +119,279 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 <script>
+    // Configuration Parameters - All adjustable values in one place
+    const EYE_CONFIG = {
+        // Eye dimensions and positioning (fullscreen coordinates)
+        leftEye: {
+            centerX: 0.35,      // 35% from left edge
+            centerY: 0.45,      // 45% from top edge
+            width: 300,         // Eye drawing area width
+            height: 200         // Eye drawing area height
+        },
+        rightEye: {
+            centerX: 0.65,      // 65% from left edge
+            centerY: 0.45,      // 45% from top edge  
+            width: 300,         // Eye drawing area width
+            height: 200         // Eye drawing area height
+        },
+        
+        // Corner positioning
+        corners: {
+            marginX: 50,        // Distance from edges
+            leftOffsetY: 5,     // Vertical offset multiplier for left corner
+            rightOffsetY: 3,    // Vertical offset multiplier for right corner
+            centerOffset: 2.5   // Center adjustment factor
+        },
+        
+        // Spline curve parameters
+        spline: {
+            tension: 0.9,        // Curve smoothness (0-1)
+            peakHeight: 500,      // Maximum eye opening height (pixels)
+            closedGap: 8,        // Minimum gap when closed (pixels)
+            controlOffset: 0.3,  // Control point distance (0-1, fraction of width)
+            curveMagnitude: 25,  // Vertical curve strength multiplier
+            thicknessMain: 3,    // Main eyelid line thickness
+            thicknessDetail: 2   // Detail line thickness
+        },
+        
+        // Eye tracking sensitivity
+        tracking: {
+            opennessSensitivity: 15,  // Eye openness detection multiplier
+        },
+        
+        // Void revelation intensity
+        voidIntensity: {
+            eyeWeight: 0.7,           // How much eye openness affects intensity (0-1)
+            fractalWeight: 0.3,       // How much fractal chaos affects intensity (0-1)
+            baseIntensity: 0.1,       // Minimum intensity when eyes closed (0-1)
+            maxIntensity: 1.0,        // Maximum intensity when fully active (0-1)
+            smoothing: 0.1            // Intensity change smoothing factor (0-1)
+        },
+        
+        // Fractal generation
+        fractal: {
+            complexity: 7,           // Recursion depth (1-10)
+            chaos: 1.2,             // Randomness factor (0-2)
+            minSize: 2,             // Minimum fragment size (pixels)
+            maxSize: 200,            // Maximum fragment size when fully open
+            fragmentRange: {
+                min: 3,             // Minimum fragments per level
+                max: 7              // Additional random fragments
+            },
+            geometry: {
+                distanceMin: 0.05,   // Minimum distance from center (0-1)
+                distanceMax: 0.7,   // Maximum distance from center (0-1)
+                sizeMin: 0.3,       // Minimum fragment size (0-1)
+                sizeMax: 0.4,       // Maximum fragment size (0-1)
+                rotationSpeed: 0.05 // Fragment rotation speed
+            },
+            shapes: {
+                triangle: 0.33,     // Probability of triangle (0-1)
+                rectangle: 0.33,    // Probability of rectangle (0-1)
+                pentagon: 0.34      // Probability of pentagon (0-1)
+            }
+        },
+        
+        // Glitch effects
+        glitch: {
+            intensity: 0.5,         // Base glitch strength (0-1)
+            colorShift: 0.3,        // RGB channel displacement (0-1)
+            noiseScale: 0.1,        // Noise texture scale (0-1)
+            timeSpeed: 0.02,        // Animation speed (0-1)
+            pixelationChance: 0.05, // Random pixel corruption chance (0-1)
+            noiseAmplitude: {
+                red: 50,            // Red channel noise strength
+                green: 30,          // Green channel noise strength
+                blue: 70            // Blue channel noise strength
+            },
+            waveFrequency: {
+                x: 0.1,             // Horizontal wave frequency
+                y: 0.1,             // Vertical wave frequency
+                timeX: 3,           // Time-based X wave speed
+                timeY: 2            // Time-based Y wave speed
+            }
+        },
+        
+        // Color and visual settings
+        colors: {
+            splineStroke: 'rgba(255, 255, 255, 0.9)', // Eyelid color
+            fractalHue: 50,         // Base hue rotation speed
+            fractalSaturation: 70,  // Color saturation (0-100)
+            fractalLightness: 60,   // Color lightness (0-100)
+            fractalAlpha: 0.8       // Fractal opacity (0-1)
+        }
+    };
+
     const voidContainer = document.getElementById('void-container');
     const wakeUpBtn = document.getElementById('wake-up-btn');
-    const eyeGlyph = document.getElementById('eye-glyph');
+    const cameraVideo = document.getElementById('camera-video');
+    const faceCanvas = document.getElementById('face-canvas');
+    const faceCtx = faceCanvas.getContext('2d');
+    const webcamCanvas = document.getElementById('webcam-canvas');
+    const webcamCtx = webcamCanvas.getContext('2d');
+    
+    // Fullscreen eye canvas
+    const eyeCanvas = document.getElementById('fullscreen-eye-canvas');
+    const eyeCtx = eyeCanvas.getContext('2d');
+    
+    // Set canvas to match screen size
+    function resizeEyeCanvas() {
+        eyeCanvas.width = window.innerWidth;
+        eyeCanvas.height = window.innerHeight;
+    }
+    
+    resizeEyeCanvas();
+    window.addEventListener('resize', resizeEyeCanvas);
+    
     let sessionStartTime = Date.now();
+    let faceMesh = null;
+    let isDetecting = false;
+    let lastDetectionTime = 0;
+    const DETECTION_INTERVAL = 33; // ~30 FPS
+    let animationTime = 0;
+    let currentVoidIntensity = 0;
+    let targetVoidIntensity = 0;
+    let currentFractalActivity = 0;
+    
+    // Parameter validation and bounds checking
+    function validateConfig() {
+        // Clamp values to safe ranges
+        EYE_CONFIG.spline.tension = Math.max(0, Math.min(1, EYE_CONFIG.spline.tension));
+        EYE_CONFIG.fractal.complexity = Math.max(1, Math.min(10, Math.floor(EYE_CONFIG.fractal.complexity)));
+        EYE_CONFIG.glitch.intensity = Math.max(0, Math.min(1, EYE_CONFIG.glitch.intensity));
+        EYE_CONFIG.tracking.opennessSensitivity = Math.max(1, Math.min(50, EYE_CONFIG.tracking.opennessSensitivity));
+        
+        // No CSS variables needed for fullscreen eyes
+        
+        console.log('EYE_CONFIG validated and applied');
+    }
+    
+    // Real-time parameter adjustment functions
+    window.updateEyeConfig = function(path, value) {
+        const keys = path.split('.');
+        let obj = EYE_CONFIG;
+        for (let i = 0; i < keys.length - 1; i++) {
+            obj = obj[keys[i]];
+        }
+        obj[keys[keys.length - 1]] = value;
+        validateConfig();
+        console.log(`Updated ${path} to ${value}`);
+    };
+    
+    // Quick access functions for common adjustments
+    window.setEyePositions = (leftX, leftY, rightX, rightY) => {
+        updateEyeConfig('leftEye.centerX', leftX);
+        updateEyeConfig('leftEye.centerY', leftY);
+        updateEyeConfig('rightEye.centerX', rightX);
+        updateEyeConfig('rightEye.centerY', rightY);
+    };
+    window.setEyeSizes = (width, height) => {
+        updateEyeConfig('leftEye.width', width);
+        updateEyeConfig('leftEye.height', height);
+        updateEyeConfig('rightEye.width', width);
+        updateEyeConfig('rightEye.height', height);
+    };
+    window.setSplineTension = (tension) => updateEyeConfig('spline.tension', tension);
+    window.setFractalChaos = (chaos) => updateEyeConfig('fractal.chaos', chaos);
+    window.setGlitchIntensity = (intensity) => updateEyeConfig('glitch.intensity', intensity);
+    window.setVoidIntensity = (eyeWeight, fractalWeight) => {
+        updateEyeConfig('voidIntensity.eyeWeight', eyeWeight);
+        updateEyeConfig('voidIntensity.fractalWeight', fractalWeight);
+    };
+    window.setVoidSmoothing = (smoothing) => updateEyeConfig('voidIntensity.smoothing', smoothing);
+    
+    // Preset configurations
+    const PRESETS = {
+        default: {
+            spline: { tension: 0.6, peakHeight: 60, curveMagnitude: 30 },
+            fractal: { complexity: 5, chaos: 0.8, maxSize: 20 },
+            glitch: { intensity: 0.5, timeSpeed: 0.02 }
+        },
+        minimal: {
+            spline: { tension: 0.3, peakHeight: 40, curveMagnitude: 15 },
+            fractal: { complexity: 3, chaos: 0.4, maxSize: 10 },
+            glitch: { intensity: 0.2, timeSpeed: 0.01 }
+        },
+        chaotic: {
+            spline: { tension: 0.9, peakHeight: 100, curveMagnitude: 50 },
+            fractal: { complexity: 8, chaos: 1.5, maxSize: 40 },
+            glitch: { intensity: 0.8, timeSpeed: 0.05 }
+        },
+        nightmare: {
+            spline: { tension: 1.0, peakHeight: 120, curveMagnitude: 60 },
+            fractal: { complexity: 10, chaos: 2.0, maxSize: 60 },
+            glitch: { intensity: 1.0, timeSpeed: 0.08 }
+        }
+    };
+    
+    window.loadPreset = function(presetName) {
+        if (!PRESETS[presetName]) {
+            console.error('Preset not found:', presetName);
+            return;
+        }
+        
+        const preset = PRESETS[presetName];
+        Object.keys(preset).forEach(category => {
+            Object.keys(preset[category]).forEach(key => {
+                updateEyeConfig(`${category}.${key}`, preset[category][key]);
+            });
+        });
+        
+        console.log(`Loaded preset: ${presetName}`);
+    };
+    
+    // Configuration save/load
+    window.saveConfig = function(name = 'custom') {
+        const config = JSON.stringify(EYE_CONFIG, null, 2);
+        localStorage.setItem(`eyeConfig_${name}`, config);
+        console.log(`Saved configuration as: ${name}`);
+        return config;
+    };
+    
+    window.loadConfig = function(name = 'custom') {
+        const saved = localStorage.getItem(`eyeConfig_${name}`);
+        if (saved) {
+            const config = JSON.parse(saved);
+            Object.assign(EYE_CONFIG, config);
+            validateConfig();
+            console.log(`Loaded configuration: ${name}`);
+            return true;
+        }
+        console.warn(`Configuration not found: ${name}`);
+        return false;
+    };
+    
+    // List available configurations
+    window.listConfigs = function() {
+        const configs = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('eyeConfig_')) {
+                configs.push(key.replace('eyeConfig_', ''));
+            }
+        }
+        console.log('Available configurations:', configs);
+        console.log('Available presets:', Object.keys(PRESETS));
+        return { saved: configs, presets: Object.keys(PRESETS) };
+    };
+    
+    // Stabilization system
+    const frameHistory = [];
+    const HISTORY_SIZE = 5;
+    const CONFIDENCE_THRESHOLD = 0.3; // Lowered for debugging
+    const MOVEMENT_THRESHOLD = 3; // pixels
+    
+    // Debug toggle - set to true to show camera video
+    const DEBUG_VIDEO = false;
+    
+    // Console helper for easy debug toggling
+    window.toggleDebugVideo = () => {
+        location.reload(); // Simple reload to apply new DEBUG_VIDEO state
+        console.log('Reload page and set DEBUG_VIDEO =', !DEBUG_VIDEO);
+    };
     
     // Zalgo text characters
     const ZALGO_UP = ['\u030d', '\u030e', '\u0304', '\u0305', '\u033f', '\u0311', '\u0306', '\u0310', '\u0352', '\u0357', '\u0351', '\u0307', '\u0308', '\u030a', '\u0342', '\u0343', '\u0344', '\u034a', '\u034b', '\u034c', '\u0303', '\u0302', '\u030c', '\u0350', '\u0300', '\u0301', '\u030b', '\u030f', '\u0312', '\u0313', '\u0314', '\u033d', '\u0309', '\u0363', '\u0364', '\u0365', '\u0366', '\u0367', '\u0368', '\u0369', '\u036a', '\u036b', '\u036c', '\u036d', '\u036e', '\u036f', '\u033e', '\u035b', '\u0346', '\u031a'];
@@ -246,11 +497,12 @@
         requestAnimationFrame(animate);
     }
 
-    function setEyesOpen(state) {
-        document.body.classList.toggle('eyes-open', state);
+    // Clean API for void revelation state
+    function setVoidRevelation(isRevealed) {
+        document.body.classList.toggle('void-revealed', isRevealed);
         const children = voidContainer.children;
         for (let el of children) {
-            if (state) {
+            if (isRevealed) {
                 if (!el.dataset.prevOpacity) {
                     el.dataset.prevOpacity = el.style.opacity;
                 }
@@ -263,6 +515,10 @@
         }
     }
 
+    function getVoidRevelation() {
+        return document.body.classList.contains('void-revealed');
+    }
+
     wakeUpBtn.addEventListener('click', (e) => {
         e.preventDefault();
         document.body.classList.add('whiteout-active');
@@ -271,12 +527,502 @@
         }, 1200);
     });
 
-    eyeGlyph.addEventListener('mouseenter', () => setEyesOpen(true));
-    eyeGlyph.addEventListener('mouseleave', () => setEyesOpen(false));
+    // MediaPipe face mesh setup with iris tracking
+    async function initializeFaceMesh() {
+        try {
+            console.log('Starting face mesh initialization...');
+            console.log('Waiting for MediaPipe scripts to load...');
+            
+            // Wait for MediaPipe to be available
+            let attempts = 0;
+            while (!window.FaceMesh && attempts < 20) {
+                console.log('Waiting for FaceMesh...', attempts);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.FaceMesh) {
+                throw new Error('FaceMesh not loaded after 2 seconds');
+            }
+            
+            console.log('Requesting camera access...');
+            
+            // Setup camera first with lower resolution for better performance
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: 320, 
+                    height: 240,
+                    facingMode: 'user',
+                    frameRate: { ideal: 30, max: 30 }
+                } 
+            });
+            cameraVideo.srcObject = stream;
+            
+            // Configure video display based on debug mode
+            if (DEBUG_VIDEO) {
+                cameraVideo.style.position = 'fixed';
+                cameraVideo.style.top = '10px';
+                cameraVideo.style.left = '10px';
+                cameraVideo.style.width = '64px';
+                cameraVideo.style.height = '48px';
+                cameraVideo.style.zIndex = '1000';
+                cameraVideo.style.border = '2px solid red';
+                cameraVideo.style.display = 'block';
+                cameraVideo.style.transform = 'scaleX(-1)'; // Mirror for debug
+            } else {
+                // Top left corner, 10% size
+                cameraVideo.style.position = 'fixed';
+                cameraVideo.style.top = '10px';
+                cameraVideo.style.left = '10px';
+                cameraVideo.style.transform = 'scaleX(-1)';
+                cameraVideo.style.width = '64px';
+                cameraVideo.style.height = '48px';
+                cameraVideo.style.zIndex = '1000';
+                cameraVideo.style.border = '1px solid rgba(255,255,255,0.2)';
+                cameraVideo.style.display = 'block';
+                cameraVideo.style.opacity = '0.1'; // Only difference from debug
+            }
+            
+            console.log('Camera access granted, setting up MediaPipe...');
+            
+            // Setup canvas dimensions - large for center, small for corner
+            faceCanvas.width = 600;
+            faceCanvas.height = 450;
+            webcamCanvas.width = 64;
+            webcamCanvas.height = 48;
+            
+            // Initialize MediaPipe Face Mesh - access from window object
+            const FaceMesh = window.FaceMesh;
+            console.log('FaceMesh available:', !!FaceMesh);
+            
+            if (!FaceMesh) {
+                console.error('FaceMesh not available on window object');
+                return;
+            }
+            
+            faceMesh = new FaceMesh({
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                }
+            });
+            
+            faceMesh.setOptions({
+                maxNumFaces: 1,
+                refineLandmarks: true,  // Enable iris tracking
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+            
+            faceMesh.onResults(drawFaceLandmarks);
+            
+            // Start detection loop
+            isDetecting = true;
+            detectFaces();
+            
+        } catch (error) {
+            console.error('Face detection initialization failed:', error);
+        }
+    }
 
+    async function detectFaces() {
+        if (!isDetecting || !faceMesh) return;
+        
+        // Throttle detection to target frame rate
+        const now = Date.now();
+        if (now - lastDetectionTime < DETECTION_INTERVAL) {
+            requestAnimationFrame(detectFaces);
+            return;
+        }
+        lastDetectionTime = now;
+        
+        if (cameraVideo.readyState === 4) {
+            await faceMesh.send({image: cameraVideo});
+        }
+        
+        requestAnimationFrame(detectFaces);
+    }
+
+    function stabilizeDetections(detections) {
+        if (!detections || detections.length === 0) return detections;
+        
+        // Filter by confidence
+        const highConfidenceDetections = detections.filter(d => 
+            !d.score || d.score.length === 0 || d.score[0] > CONFIDENCE_THRESHOLD
+        );
+        
+        if (highConfidenceDetections.length === 0) return detections;
+        
+        // Add to history
+        frameHistory.push(highConfidenceDetections);
+        if (frameHistory.length > HISTORY_SIZE) {
+            frameHistory.shift();
+        }
+        
+        // If we don't have enough history, return current
+        if (frameHistory.length < 3) return highConfidenceDetections;
+        
+        // Average positions across frames
+        return highConfidenceDetections.map((detection, detectionIndex) => {
+            const stabilizedDetection = { ...detection };
+            
+            // Average bounding box
+            let avgXCenter = 0, avgYCenter = 0, avgWidth = 0, avgHeight = 0;
+            let validFrames = 0;
+            
+            frameHistory.forEach(frame => {
+                if (frame[detectionIndex]) {
+                    avgXCenter += frame[detectionIndex].boundingBox.xCenter;
+                    avgYCenter += frame[detectionIndex].boundingBox.yCenter;
+                    avgWidth += frame[detectionIndex].boundingBox.width;
+                    avgHeight += frame[detectionIndex].boundingBox.height;
+                    validFrames++;
+                }
+            });
+            
+            if (validFrames > 0) {
+                stabilizedDetection.boundingBox = {
+                    xCenter: avgXCenter / validFrames,
+                    yCenter: avgYCenter / validFrames,
+                    width: avgWidth / validFrames,
+                    height: avgHeight / validFrames
+                };
+            }
+            
+            // Average landmarks
+            if (detection.landmarks && frameHistory[0][detectionIndex]?.landmarks) {
+                stabilizedDetection.landmarks = detection.landmarks.map((landmark, landmarkIndex) => {
+                    let avgX = 0, avgY = 0;
+                    let validLandmarks = 0;
+                    
+                    frameHistory.forEach(frame => {
+                        if (frame[detectionIndex]?.landmarks[landmarkIndex]) {
+                            avgX += frame[detectionIndex].landmarks[landmarkIndex].x;
+                            avgY += frame[detectionIndex].landmarks[landmarkIndex].y;
+                            validLandmarks++;
+                        }
+                    });
+                    
+                    return validLandmarks > 0 ? {
+                        x: avgX / validLandmarks,
+                        y: avgY / validLandmarks,
+                        z: landmark.z
+                    } : landmark;
+                });
+            }
+            
+            return stabilizedDetection;
+        });
+    }
+
+    // Eyelid landmarks for blink detection
+    const LEFT_EYE_UPPER = 159;
+    const LEFT_EYE_LOWER = 145;
+    const RIGHT_EYE_UPPER = 386;
+    const RIGHT_EYE_LOWER = 374;
+    
+    // Calculate void intensity based on eye openness and fractal activity
+    function calculateVoidIntensity(eyeOpenness, fractalActivity) {
+        // Normalize fractal activity (it can get quite large)
+        const normalizedFractalActivity = Math.min(fractalActivity / 100, 1);
+        
+        // Calculate combined intensity
+        const eyeComponent = eyeOpenness * EYE_CONFIG.voidIntensity.eyeWeight;
+        const fractalComponent = normalizedFractalActivity * EYE_CONFIG.voidIntensity.fractalWeight;
+        const rawIntensity = eyeComponent + fractalComponent;
+        
+        // Apply base intensity and clamp to max
+        const intensity = EYE_CONFIG.voidIntensity.baseIntensity + 
+                         (rawIntensity * (EYE_CONFIG.voidIntensity.maxIntensity - EYE_CONFIG.voidIntensity.baseIntensity));
+        
+        return Math.max(EYE_CONFIG.voidIntensity.baseIntensity, Math.min(EYE_CONFIG.voidIntensity.maxIntensity, intensity));
+    }
+    
+    // Apply void intensity to all text elements
+    function updateVoidRevelation(intensity) {
+        const screams = voidContainer.querySelectorAll('.scream');
+        
+        screams.forEach(scream => {
+            // Apply intensity-based styling
+            scream.style.opacity = intensity;
+            scream.style.color = `rgba(255, 255, 255, ${0.5 + (intensity * 0.5)})`;
+            scream.style.textShadow = `0 0 ${18 * intensity}px rgba(255, 255, 255, ${0.6 * intensity})`;
+            
+            // Add subtle color variation based on intensity
+            const hue = (animationTime * 10 + intensity * 60) % 360;
+            if (intensity > 0.7) {
+                scream.style.color = `hsla(${hue}, 70%, ${60 + (intensity * 40)}%, ${intensity})`;
+            }
+        });
+    }
+    
+    // Bezier curve helper function
+    function drawBezierSpline(ctx, startX, startY, cp1X, cp1Y, cp2X, cp2Y, endX, endY, thickness = EYE_CONFIG.spline.thicknessDetail) {
+        ctx.lineWidth = thickness;
+        ctx.strokeStyle = EYE_CONFIG.colors.splineStroke;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, endX, endY);
+        ctx.stroke();
+    }
+    
+    // Generate chaotic fractal geometry
+    function generateFractal(ctx, centerX, centerY, size, complexity, chaos, time) {
+        if (complexity <= 0 || size < EYE_CONFIG.fractal.minSize) return;
+        
+        // Track fractal activity for intensity calculation
+        currentFractalActivity += size * complexity * chaos * 0.01;
+        
+        const numFragments = Math.floor(EYE_CONFIG.fractal.fragmentRange.min + 
+                                      Math.random() * EYE_CONFIG.fractal.fragmentRange.max);
+        
+        for (let i = 0; i < numFragments; i++) {
+            const angle = (i / numFragments) * Math.PI * 2 + time * 0.1;
+            const distanceRange = EYE_CONFIG.fractal.geometry.distanceMax - EYE_CONFIG.fractal.geometry.distanceMin;
+            const distance = size * (EYE_CONFIG.fractal.geometry.distanceMin + Math.random() * distanceRange);
+            const sizeRange = EYE_CONFIG.fractal.geometry.sizeMax - EYE_CONFIG.fractal.geometry.sizeMin;
+            const fragSize = size * (EYE_CONFIG.fractal.geometry.sizeMin + Math.random() * sizeRange);
+            
+            const x = centerX + Math.cos(angle) * distance * (1 + chaos * (Math.random() - 0.5));
+            const y = centerY + Math.sin(angle) * distance * (1 + chaos * (Math.random() - 0.5));
+            
+            // Draw fragment
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle + time * EYE_CONFIG.fractal.geometry.rotationSpeed);
+            
+            const hue = (time * EYE_CONFIG.colors.fractalHue + i * 60) % 360;
+            ctx.strokeStyle = `hsla(${hue}, ${EYE_CONFIG.colors.fractalSaturation}%, ${EYE_CONFIG.colors.fractalLightness}%, ${EYE_CONFIG.colors.fractalAlpha})`;
+            ctx.lineWidth = 1 + Math.random() * 2;
+            
+            // Choose shape based on probabilities
+            const rand = Math.random();
+            const triangle = EYE_CONFIG.fractal.shapes.triangle;
+            const rectangle = triangle + EYE_CONFIG.fractal.shapes.rectangle;
+            
+            ctx.beginPath();
+            
+            if (rand < triangle) {
+                // Triangle
+                ctx.moveTo(0, -fragSize);
+                ctx.lineTo(-fragSize * 0.866, fragSize * 0.5);
+                ctx.lineTo(fragSize * 0.866, fragSize * 0.5);
+                ctx.closePath();
+            } else if (rand < rectangle) {
+                // Rectangle
+                ctx.rect(-fragSize/2, -fragSize/2, fragSize, fragSize);
+            } else {
+                // Pentagon
+                for (let j = 0; j < 5; j++) {
+                    const ang = (j / 5) * Math.PI * 2;
+                    const px = Math.cos(ang) * fragSize;
+                    const py = Math.sin(ang) * fragSize;
+                    if (j === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+            }
+            
+            ctx.stroke();
+            ctx.restore();
+            
+            // Recurse
+            generateFractal(ctx, x, y, fragSize, complexity - 1, chaos, time);
+        }
+    }
+    
+    // Apply glitch effect
+    function applyGlitchEffect(ctx, canvas, intensity, time) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // RGB channel shifting
+        const shiftAmount = Math.floor(intensity * EYE_CONFIG.glitch.colorShift * 10);
+        
+        for (let i = 0; i < data.length; i += 4) {
+            const x = (i / 4) % canvas.width;
+            const y = Math.floor((i / 4) / canvas.width);
+            
+            // Time-based noise using configurable wave frequencies
+            const noise = Math.sin(x * EYE_CONFIG.glitch.waveFrequency.x + time * EYE_CONFIG.glitch.waveFrequency.timeX) * 
+                         Math.cos(y * EYE_CONFIG.glitch.waveFrequency.y + time * EYE_CONFIG.glitch.waveFrequency.timeY) * intensity;
+            
+            // Color shifting
+            if (x > shiftAmount && x < canvas.width - shiftAmount) {
+                const shiftedR = data[i - shiftAmount * 4] || 0;
+                const shiftedB = data[i + shiftAmount * 4] || 0;
+                
+                data[i] = shiftedR + noise * EYE_CONFIG.glitch.noiseAmplitude.red;       // Red
+                data[i + 1] = data[i + 1] + noise * EYE_CONFIG.glitch.noiseAmplitude.green; // Green
+                data[i + 2] = shiftedB + noise * EYE_CONFIG.glitch.noiseAmplitude.blue;     // Blue
+            }
+            
+            // Random pixelation using configurable chance
+            if (Math.random() < intensity * EYE_CONFIG.glitch.pixelationChance) {
+                data[i] = Math.random() * 255;
+                data[i + 1] = Math.random() * 255;
+                data[i + 2] = Math.random() * 255;
+            }
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+    }
+    
+    function updateAbstractEyes(landmarks) {
+        animationTime += EYE_CONFIG.glitch.timeSpeed;
+        
+        // Reset fractal activity counter
+        currentFractalActivity = 0;
+        
+        // Calculate eyelid positions
+        const leftUpper = landmarks[LEFT_EYE_UPPER];
+        const leftLower = landmarks[LEFT_EYE_LOWER];
+        const rightUpper = landmarks[RIGHT_EYE_UPPER];
+        const rightLower = landmarks[RIGHT_EYE_LOWER];
+        
+        // Calculate eye openness (0 = closed, 1 = fully open)
+        const leftEyeOpen = Math.max(0, Math.min(1, Math.abs(leftUpper.y - leftLower.y) * EYE_CONFIG.tracking.opennessSensitivity));
+        const rightEyeOpen = Math.max(0, Math.min(1, Math.abs(rightUpper.y - rightLower.y) * EYE_CONFIG.tracking.opennessSensitivity));
+        
+        // Average eye openness
+        const averageEyeOpenness = (leftEyeOpen + rightEyeOpen) / 2;
+        
+        // Clear entire canvas
+        eyeCtx.clearRect(0, 0, eyeCanvas.width, eyeCanvas.height);
+        
+        // Draw both eyes on fullscreen canvas (this will populate currentFractalActivity)
+        drawFullscreenEye(eyeCtx, leftEyeOpen, animationTime, 'left');
+        drawFullscreenEye(eyeCtx, rightEyeOpen, animationTime, 'right');
+        
+        // Calculate target void intensity based on eye openness and fractal activity
+        targetVoidIntensity = calculateVoidIntensity(averageEyeOpenness, currentFractalActivity);
+        
+        // Smooth intensity changes
+        currentVoidIntensity += (targetVoidIntensity - currentVoidIntensity) * EYE_CONFIG.voidIntensity.smoothing;
+        
+        // Update void text revelation
+        updateVoidRevelation(currentVoidIntensity);
+    }
+    
+    function drawFullscreenEye(ctx, openness, time, side) {
+        const eyeConfig = side === 'left' ? EYE_CONFIG.leftEye : EYE_CONFIG.rightEye;
+        
+        // Calculate absolute positions on screen
+        const centerX = eyeCanvas.width * eyeConfig.centerX;
+        const centerY = eyeCanvas.height * eyeConfig.centerY;
+        const width = eyeConfig.width;
+        const height = eyeConfig.height;
+        
+        // Calculate spline parameters based on eye openness
+        const gap = EYE_CONFIG.spline.closedGap + (openness * EYE_CONFIG.spline.peakHeight);
+        const controlOffset = EYE_CONFIG.spline.controlOffset * width;
+        
+        // Calculate corner connection points
+        const leftCornerX = centerX - width/2 + EYE_CONFIG.corners.marginX;
+        const rightCornerX = centerX + width/2 - EYE_CONFIG.corners.marginX;
+        const leftCornerY = centerY + (openness * EYE_CONFIG.corners.leftOffsetY - EYE_CONFIG.corners.centerOffset);
+        const rightCornerY = centerY + (openness * EYE_CONFIG.corners.rightOffsetY - EYE_CONFIG.corners.centerOffset / 2);
+        
+        // Top eyelid curve (opens upward)
+        const topY = centerY - gap / 2;
+        const topControlY = topY - (openness * EYE_CONFIG.spline.curveMagnitude * EYE_CONFIG.spline.tension);
+        
+        drawBezierSpline(
+            ctx,
+            leftCornerX, leftCornerY,           // Start point (left corner)
+            leftCornerX + controlOffset, topControlY,   // Control point 1
+            rightCornerX - controlOffset, topControlY, // Control point 2
+            rightCornerX, rightCornerY,         // End point (right corner)
+            EYE_CONFIG.spline.thicknessMain
+        );
+        
+        // Bottom eyelid curve (opens downward)
+        const bottomY = centerY + gap / 2;
+        const bottomControlY = bottomY + (openness * EYE_CONFIG.spline.curveMagnitude * EYE_CONFIG.spline.tension);
+        
+        drawBezierSpline(
+            ctx,
+            leftCornerX, leftCornerY,           // Start point (left corner)
+            leftCornerX + controlOffset, bottomControlY, // Control point 1
+            rightCornerX - controlOffset, bottomControlY, // Control point 2
+            rightCornerX, rightCornerY,         // End point (right corner)
+            EYE_CONFIG.spline.thicknessMain
+        );
+        
+        // Generate fractal in the middle (between eyelids)
+        if (openness > 0.1) {
+            const fractalSize = EYE_CONFIG.fractal.minSize + 
+                               (openness * (EYE_CONFIG.fractal.maxSize - EYE_CONFIG.fractal.minSize));
+            
+            // Create temporary canvas for fractal with glitch effects
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            generateFractal(
+                tempCtx, 
+                width/2, 
+                height/2, 
+                fractalSize,
+                EYE_CONFIG.fractal.complexity,
+                EYE_CONFIG.fractal.chaos,
+                time + (side === 'left' ? 0 : Math.PI)
+            );
+            
+            // Apply glitch effects
+            const glitchIntensity = openness * EYE_CONFIG.glitch.intensity;
+            applyGlitchEffect(tempCtx, tempCanvas, glitchIntensity, time);
+            
+            // Draw fractal to main canvas at eye position
+            ctx.drawImage(tempCanvas, centerX - width/2, centerY - height/2);
+        }
+    }
+    
+    function drawFaceLandmarks(results) {
+        // Clear webcam canvas only
+        webcamCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+        
+        // Draw webcam feed in corner
+        webcamCtx.save();
+        webcamCtx.scale(-1, 1);
+        webcamCtx.translate(-webcamCanvas.width, 0);
+        webcamCtx.drawImage(cameraVideo, 0, 0, webcamCanvas.width, webcamCanvas.height);
+        webcamCtx.restore();
+        
+        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+            const landmarks = results.multiFaceLandmarks[0];
+            
+            // Update abstract eye visuals and void intensity
+            updateAbstractEyes(landmarks);
+        }
+    }
+    
+
+    // Initialize configuration system
+    validateConfig();
+    
     loadScreams();
     animate();
     setInterval(loadScreams, 30000);
+    initializeFaceMesh();
+    
+    // Console help
+    console.log('👁️ EYE & VOID CONFIGURATION COMMANDS:');
+    console.log('updateEyeConfig("path.to.setting", value) - Update any config value');
+    console.log('setEyePositions(leftX, leftY, rightX, rightY) - Position eyes (0-1)');
+    console.log('setEyeSizes(width, height) - Eye canvas sizes');
+    console.log('setSplineTension(0-1) - Curve smoothness');
+    console.log('setFractalChaos(0-2) - Chaos intensity');
+    console.log('setGlitchIntensity(0-1) - Glitch strength');
+    console.log('setVoidIntensity(eyeWeight, fractalWeight) - Intensity balance');
+    console.log('setVoidSmoothing(0-1) - Intensity change smoothing');
+    console.log('loadPreset("minimal|chaotic|nightmare") - Load preset');
+    console.log('saveConfig("name") - Save current config');
+    console.log('loadConfig("name") - Load saved config');
+    console.log('listConfigs() - Show available configs');
+    console.log('EYE_CONFIG - View current settings');
+    console.log('💡 Void intensity = (eye openness * 70%) + (fractal chaos * 30%)');
 </script>
 {% endblock %}
 
