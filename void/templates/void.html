@@ -650,64 +650,105 @@
         return buffer;
     }
 
+    function createDistortionCurve(amount) {
+        const samples = 44100;
+        const curve = new Float32Array(samples);
+        const deg = Math.PI / 180;
+        for (let i = 0; i < samples; ++i) {
+            const x = (i * 2) / samples - 1;
+            curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+        }
+        return curve;
+    }
+
     function buildHorrorScore() {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const masterGain = ctx.createGain();
         masterGain.gain.value = 0.0001;
         masterGain.connect(ctx.destination);
 
+        const distortion = ctx.createWaveShaper();
+        distortion.curve = createDistortionCurve(80);
+        distortion.oversample = '4x';
+        distortion.connect(masterGain);
+
         const lowOsc = ctx.createOscillator();
         lowOsc.type = 'sawtooth';
-        lowOsc.frequency.value = 32;
+        lowOsc.frequency.value = 30;
         const lowGain = ctx.createGain();
         lowGain.gain.value = 0.08;
-        lowOsc.connect(lowGain).connect(masterGain);
+        lowOsc.connect(lowGain).connect(distortion);
+
+        const subOsc = ctx.createOscillator();
+        subOsc.type = 'square';
+        subOsc.frequency.value = 17;
+        subOsc.detune.value = -15;
+        const subGain = ctx.createGain();
+        subGain.gain.value = 0.03;
+        subOsc.connect(subGain).connect(distortion);
 
         const highOsc = ctx.createOscillator();
         highOsc.type = 'triangle';
-        highOsc.frequency.value = 66;
+        highOsc.frequency.value = 210;
+        highOsc.detune.value = 12;
         const highGain = ctx.createGain();
         highGain.gain.value = 0.02;
-        highOsc.connect(highGain).connect(masterGain);
+        highOsc.connect(highGain).connect(distortion);
 
         const noise = ctx.createBufferSource();
         noise.buffer = createNoiseBuffer(ctx);
         noise.loop = true;
         const noiseFilter = ctx.createBiquadFilter();
         noiseFilter.type = 'bandpass';
-        noiseFilter.frequency.value = 520;
-        noiseFilter.Q.value = 0.8;
+        noiseFilter.frequency.value = 420;
+        noiseFilter.Q.value = 0.6;
         const noiseGain = ctx.createGain();
-        noiseGain.gain.value = 0.01;
-        noise.connect(noiseFilter).connect(noiseGain).connect(masterGain);
+        noiseGain.gain.value = 0.008;
+        noise.connect(noiseFilter).connect(noiseGain).connect(distortion);
 
-        const pulse = ctx.createOscillator();
-        pulse.type = 'sine';
-        pulse.frequency.value = 1.2;
-        const pulseGain = ctx.createGain();
-        pulseGain.gain.value = 18;
-        pulse.connect(pulseGain).connect(lowOsc.frequency);
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 0.25;
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 18;
+        lfo.connect(lfoGain).connect(lowOsc.frequency);
+
+        const filterLfo = ctx.createOscillator();
+        filterLfo.type = 'triangle';
+        filterLfo.frequency.value = 0.15;
+        const filterGain = ctx.createGain();
+        filterGain.gain.value = 180;
+        filterLfo.connect(filterGain).connect(noiseFilter.frequency);
 
         lowOsc.start();
+        subOsc.start();
         highOsc.start();
         noise.start();
-        pulse.start();
+        lfo.start();
+        filterLfo.start();
 
         horrorAudio = {
             ctx,
             masterGain,
             lowGain,
             highGain,
-            noiseGain
+            noiseGain,
+            subGain
         };
     }
 
-    function startHorrorAudio() {
+    let autoResumeInterval = null;
+    let triedAutoplay = false;
+
+    function startHorrorAudio(force = false) {
         if (!horrorAudio) {
             buildHorrorScore();
         }
-        if (horrorAudio.ctx.state === 'suspended') {
+        if (force && horrorAudio.ctx.state === 'suspended') {
             horrorAudio.ctx.resume();
+        } else if (!force && horrorAudio.ctx.state === 'suspended') {
+            // Without user gesture this may fail silently; a later force will pick it up.
+            horrorAudio.ctx.resume().catch(() => {});
         }
         updateHorrorAudio(lastEyeOpenness);
     }
@@ -731,12 +772,30 @@
     }
 
     function armHorrorAutoplay() {
-        const unlock = () => startHorrorAudio();
-        ['pointerdown', 'touchstart', 'keydown'].forEach(evt => {
-            document.addEventListener(evt, unlock, { once: true });
+        const unlock = () => startHorrorAudio(true);
+        const eagerAttempt = () => startHorrorAudio(false);
+
+        // Keep retrying resume while page is visible to maximize autoplay chances
+        if (!autoResumeInterval) {
+            autoResumeInterval = setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    eagerAttempt();
+                }
+            }, 1500);
+        }
+
+        ['pointerdown', 'touchstart', 'keydown', 'visibilitychange', 'focus'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                if (evt === 'visibilitychange' && document.visibilityState !== 'visible') return;
+                unlock();
+            }, { once: evt !== 'visibilitychange' });
         });
+
         // Try immediately for browsers that allow autoplay
-        startHorrorAudio();
+        if (!triedAutoplay) {
+            triedAutoplay = true;
+            eagerAttempt();
+        }
     }
     
     // Parameter validation and bounds checking
