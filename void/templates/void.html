@@ -636,6 +636,108 @@
     let currentVoidIntensity = 0;
     let targetVoidIntensity = 0;
     let currentFractalActivity = 0;
+    let horrorAudio = null;
+    let lastEyeOpenness = 1;
+
+    // Procedural horror bed so we don't depend on external audio assets
+    function createNoiseBuffer(ctx) {
+        const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            const fade = 1 - (i / data.length);
+            data[i] = (Math.random() * 2 - 1) * fade;
+        }
+        return buffer;
+    }
+
+    function buildHorrorScore() {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const masterGain = ctx.createGain();
+        masterGain.gain.value = 0.0001;
+        masterGain.connect(ctx.destination);
+
+        const lowOsc = ctx.createOscillator();
+        lowOsc.type = 'sawtooth';
+        lowOsc.frequency.value = 32;
+        const lowGain = ctx.createGain();
+        lowGain.gain.value = 0.08;
+        lowOsc.connect(lowGain).connect(masterGain);
+
+        const highOsc = ctx.createOscillator();
+        highOsc.type = 'triangle';
+        highOsc.frequency.value = 66;
+        const highGain = ctx.createGain();
+        highGain.gain.value = 0.02;
+        highOsc.connect(highGain).connect(masterGain);
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = createNoiseBuffer(ctx);
+        noise.loop = true;
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.value = 520;
+        noiseFilter.Q.value = 0.8;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.value = 0.01;
+        noise.connect(noiseFilter).connect(noiseGain).connect(masterGain);
+
+        const pulse = ctx.createOscillator();
+        pulse.type = 'sine';
+        pulse.frequency.value = 1.2;
+        const pulseGain = ctx.createGain();
+        pulseGain.gain.value = 18;
+        pulse.connect(pulseGain).connect(lowOsc.frequency);
+
+        lowOsc.start();
+        highOsc.start();
+        noise.start();
+        pulse.start();
+
+        horrorAudio = {
+            ctx,
+            masterGain,
+            lowGain,
+            highGain,
+            noiseGain
+        };
+    }
+
+    function startHorrorAudio() {
+        if (!horrorAudio) {
+            buildHorrorScore();
+        }
+        if (horrorAudio.ctx.state === 'suspended') {
+            horrorAudio.ctx.resume();
+        }
+        updateHorrorAudio(lastEyeOpenness);
+    }
+
+    function updateHorrorAudio(eyeOpenness = 1) {
+        lastEyeOpenness = Math.max(0, Math.min(1, eyeOpenness));
+        if (!horrorAudio) return;
+
+        const closeness = 1 - lastEyeOpenness; // 0 = wide open, 1 = fully closed
+        const now = horrorAudio.ctx.currentTime;
+
+        const masterTarget = 0.08 + closeness * 0.35;
+        const noiseTarget = 0.03 + closeness * 0.25;
+        const lowTarget = 0.07 + closeness * 0.2;
+        const highTarget = 0.015 + closeness * 0.08;
+
+        horrorAudio.masterGain.gain.linearRampToValueAtTime(masterTarget, now + 0.25);
+        horrorAudio.noiseGain.gain.linearRampToValueAtTime(noiseTarget, now + 0.25);
+        horrorAudio.lowGain.gain.linearRampToValueAtTime(lowTarget, now + 0.25);
+        horrorAudio.highGain.gain.linearRampToValueAtTime(highTarget, now + 0.25);
+    }
+
+    function armHorrorAutoplay() {
+        const unlock = () => startHorrorAudio();
+        ['pointerdown', 'touchstart', 'keydown'].forEach(evt => {
+            document.addEventListener(evt, unlock, { once: true });
+        });
+        // Try immediately for browsers that allow autoplay
+        startHorrorAudio();
+    }
     
     // Parameter validation and bounds checking
     function validateConfig() {
@@ -1259,6 +1361,8 @@
         // Add hover interaction for simple eyes
         eyeGlyph.addEventListener('mouseenter', () => setEyesOpen(true));
         eyeGlyph.addEventListener('mouseleave', () => setEyesOpen(false));
+
+        startHorrorAudio();
     }
     
     function setEyesOpen(state) {
@@ -1276,6 +1380,8 @@
                 delete el.dataset.prevOpacity;
             }
         }
+
+        updateHorrorAudio(state ? 1 : 0);
     }
 
     // MediaPipe face mesh setup with iris tracking
@@ -1654,6 +1760,9 @@
         
         // Smooth intensity changes
         currentVoidIntensity += (targetVoidIntensity - currentVoidIntensity) * EYE_CONFIG.voidIntensity.smoothing;
+
+        // Drive the procedural horror score with eyelid tension
+        updateHorrorAudio(averageEyeOpenness);
         
         // Update void text revelation
         updateVoidRevelation(currentVoidIntensity);
@@ -1756,6 +1865,7 @@
 
     // Initialize configuration system
     validateConfig();
+    armHorrorAutoplay();
     
     // Random Blink Mode (1 in 3 chance)
     if (Math.random() < 0.33) {
@@ -1806,4 +1916,3 @@
     console.log('💡 Void intensity = (eye openness * 70%) + (fractal chaos * 30%)');
 </script>
 {% endblock %}
-
