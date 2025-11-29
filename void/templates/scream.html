@@ -143,6 +143,19 @@
         0%, 100% { opacity: 0.3; }
         50% { opacity: 0.8; }
     }
+
+    #whatisthevoid {
+        position: absolute;
+        right: 100px;
+        top: 100px;
+        opacity: 1;
+        z-index: 10000;
+        cursor: pointer;
+    }
+
+    #whatisthevoid:hover {
+        color: red;
+    }
 </style>
 {% endblock %}
 
@@ -163,6 +176,7 @@
     <div class="actions">
         <a href="{{ url_for('void.enter_void') }}" class="btn-void" id="enter-void">ENTER THE VOID</a>
     </div>
+    <div id="whatisthevoid">void?</div>
 </div>
 {% endblock %}
 
@@ -172,6 +186,7 @@
     const input = document.getElementById('scream-input');
     const feedback = document.getElementById('feedback');
     const enterBtn = document.getElementById('enter-void');
+    const whatIsTheVoidBtn = document.getElementById('whatisthevoid');
     const container = document.getElementById('main-container');
     const scareOverlay = document.getElementById('jumpscare-overlay');
 
@@ -292,6 +307,74 @@
         }, 60);
     }
 
+    const transitionToTheVoid = () => {
+        container.classList.add('warp-active');
+        setTimeout(() => {
+            window.location.href = "{{ url_for('void.enter_void') }}";
+        }, 1200);
+    }
+
+    async function playTheVoidExplainedAudio() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        try {
+            const audioUrl = "{{ url_for('void.serve_audio', filename='thevoidexplained.mp3') }}";
+            const response = await fetch(audioUrl);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffer;
+
+            // --- Distortion Setup ---
+            const distortion = audioCtx.createWaveShaper();
+            const preDistortionGain = audioCtx.createGain();
+
+            // --- Make the distortion curve ---
+            // A simple curve is enough. We'll drive it harder with gain.
+            const curve = new Float32Array(256);
+            for (let i = 0; i < 256; i++) {
+                const x = (i * 2) / 255 - 1; // -1 to 1
+                // A simple tanh curve for some crunch. The multiplication factor inside tanh determines the harshness.
+                curve[i] = Math.tanh(x * 4); 
+            }
+            distortion.curve = curve;
+            distortion.oversample = '4x';
+
+            // Connect the nodes
+            source.connect(preDistortionGain);
+            preDistortionGain.connect(distortion);
+            distortion.connect(audioCtx.destination);
+
+            // Start audio playback
+            source.start();
+
+            // --- Effects over time ---
+            const duration = audioBuffer.duration;
+            const now = audioCtx.currentTime;
+
+            // 1. Make it "deeper": Decrease playbackRate over time
+            // Starts at normal speed (1), ends slightly slower and deeper (e.g., 0.8)
+            source.playbackRate.setValueAtTime(1, now);
+            source.playbackRate.linearRampToValueAtTime(0.8, now + duration);
+
+            // 2. Make it more distorted: Increase pre-distortion gain over time
+            // Starts at 0 gain (no distortion), ramps up to a high value for strong effect
+            preDistortionGain.gain.setValueAtTime(0, now);
+            preDistortionGain.gain.linearRampToValueAtTime(50, now + duration);
+
+
+            source.onended = () => {
+                audioCtx.close();
+                transitionToTheVoid();
+            };
+
+        } catch (e) {
+            console.error("Error playing 'thevoidexplained.mp3':", e);
+            if (audioCtx) audioCtx.close();
+        }
+    }
+
     // Check if returning from vortex - placeholder will be corrupted/modified from "SCREAM"
     const urlParams = new URLSearchParams(window.location.search);
     const placeholder = urlParams.get('p');
@@ -371,12 +454,13 @@
         }
     });
 
+    whatIsTheVoidBtn.addEventListener("click", () => {
+        playTheVoidExplainedAudio()
+    })
+
     enterBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        container.classList.add('warp-active');
-        setTimeout(() => {
-            window.location.href = "{{ url_for('void.enter_void') }}";
-        }, 1200);
+        transitionToTheVoid();
     });
 </script>
 {% endblock %}

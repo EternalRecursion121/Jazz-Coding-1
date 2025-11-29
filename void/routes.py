@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, send_from_directory, current_app
+import os
 from void.models import Scream, db
 
 bp = Blueprint('void', __name__, template_folder='templates')
@@ -41,3 +42,8 @@ def fake_news():
 @bp.route('/vortex')
 def vortex():
     return render_template('vortex.html')
+
+@bp.route('/audio/<path:filename>')
+def serve_audio(filename):
+    audio_dir = os.path.join(current_app.root_path, 'shared', 'audio')
+    return send_from_directory(audio_dir, filename)
