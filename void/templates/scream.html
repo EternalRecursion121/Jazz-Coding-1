@@ -85,10 +85,149 @@
         color: #444;
         font-size: 1.2rem;
     }
+
+    /* DEMENTED UNICORN JUMPSCARE */
+    #unicorn-jumpscare {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 99999;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.95);
+        pointer-events: none;
+    }
+
+    #unicorn-jumpscare.active {
+        display: flex;
+        animation: jumpscareFlash 1s forwards;
+    }
+
+    @keyframes jumpscareFlash {
+        0% { opacity: 0; transform: scale(0.5); }
+        5% { opacity: 1; transform: scale(1.2); }
+        10% { transform: scale(1); filter: invert(1); }
+        15% { filter: invert(0) hue-rotate(180deg); }
+        20% { transform: scale(1.1) rotate(5deg); }
+        30% { filter: hue-rotate(0deg) saturate(3); }
+        40% { transform: scale(1) rotate(-3deg); filter: blur(2px); }
+        50% { filter: blur(0) brightness(2); }
+        60% { transform: scale(1.15); filter: brightness(1); }
+        70% { filter: invert(1) hue-rotate(90deg); }
+        85% { opacity: 1; transform: scale(1.3); }
+        100% { opacity: 0; transform: scale(3); filter: blur(20px); }
+    }
+
+    #unicorn-svg {
+        width: 60vmin;
+        height: 60vmin;
+    }
+
+    #unicorn-svg .unicorn-body {
+        fill: #ff1493;
+        filter: drop-shadow(0 0 20px #ff1493);
+    }
+
+    #unicorn-svg .unicorn-eye {
+        fill: #ff0000;
+        filter: drop-shadow(0 0 10px #ff0000);
+    }
+
+    #unicorn-svg .unicorn-horn {
+        fill: #ffff00;
+        filter: drop-shadow(0 0 15px #ffff00);
+    }
+
+    #unicorn-svg .unicorn-mane {
+        fill: #00ffff;
+        filter: drop-shadow(0 0 10px #00ffff);
+    }
+
+    #unicorn-jumpscare.active #unicorn-svg {
+        animation: unicornTwitch 0.1s infinite;
+    }
+
+    @keyframes unicornTwitch {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        25% { transform: translate(-5px, 3px) rotate(-2deg); }
+        50% { transform: translate(5px, -3px) rotate(2deg); }
+        75% { transform: translate(-3px, -5px) rotate(-1deg); }
+        100% { transform: translate(3px, 5px) rotate(1deg); }
+    }
+
+    /* State 2: SCREAMING mouth open */
+    #unicorn-svg.screaming .mouth-closed { display: none; }
+    #unicorn-svg.screaming .mouth-open { display: block; }
+    #unicorn-svg:not(.screaming) .mouth-closed { display: block; }
+    #unicorn-svg:not(.screaming) .mouth-open { display: none; }
+
+    #unicorn-svg.screaming .unicorn-eye {
+        transform-origin: center;
+        animation: eyePulse 0.15s infinite;
+    }
+
+    @keyframes eyePulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.5); }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- DEMENTED UNICORN JUMPSCARE -->
+<div id="unicorn-jumpscare">
+    <svg id="unicorn-svg" viewBox="0 0 200 200">
+        <!-- Horn -->
+        <polygon class="unicorn-horn" points="100,5 85,60 115,60"/>
+        <line x1="90" y1="20" x2="95" y2="35" stroke="#ff00ff" stroke-width="2"/>
+        <line x1="95" y1="25" x2="100" y2="45" stroke="#ff00ff" stroke-width="2"/>
+        <line x1="100" y1="15" x2="105" y2="40" stroke="#ff00ff" stroke-width="2"/>
+        
+        <!-- Mane -->
+        <path class="unicorn-mane" d="M60,50 Q30,70 50,100 Q25,110 55,140 Q35,155 70,160 L75,60 Z"/>
+        
+        <!-- Head/Body -->
+        <ellipse class="unicorn-body" cx="100" cy="110" rx="50" ry="60"/>
+        
+        <!-- Ears -->
+        <polygon class="unicorn-body" points="65,55 55,30 80,50"/>
+        <polygon class="unicorn-body" points="135,55 145,30 120,50"/>
+        
+        <!-- Eyes - DEMENTED -->
+        <circle class="unicorn-eye" cx="80" cy="95" r="12"/>
+        <circle class="unicorn-eye" cx="120" cy="95" r="12"/>
+        <!-- Spiral pupils -->
+        <circle cx="80" cy="95" r="5" fill="#000"/>
+        <circle cx="120" cy="95" r="5" fill="#000"/>
+        <circle cx="78" cy="93" r="2" fill="#fff"/>
+        <circle cx="118" cy="93" r="2" fill="#fff"/>
+        
+        <!-- Mouth - State 1: Closed (unsettling grin) -->
+        <path class="mouth-closed" d="M75,135 Q100,155 125,135" stroke="#300" stroke-width="4" fill="none"/>
+        
+        <!-- Mouth - State 2: SCREAMING -->
+        <g class="mouth-open">
+            <ellipse cx="100" cy="145" rx="25" ry="20" fill="#200"/>
+            <ellipse cx="100" cy="145" rx="20" ry="15" fill="#000"/>
+            <!-- Teeth -->
+            <rect x="82" y="130" width="8" height="10" fill="#fff" rx="1"/>
+            <rect x="92" y="128" width="8" height="12" fill="#fff" rx="1"/>
+            <rect x="102" y="128" width="8" height="12" fill="#fff" rx="1"/>
+            <rect x="112" y="130" width="8" height="10" fill="#fff" rx="1"/>
+            <!-- Tongue -->
+            <ellipse cx="100" cy="155" rx="12" ry="8" fill="#ff1493"/>
+        </g>
+        
+        <!-- Drool/foam for extra dementia -->
+        <circle cx="85" cy="165" r="3" fill="rgba(255,255,255,0.6)"/>
+        <circle cx="115" cy="168" r="4" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="90" cy="172" r="2" fill="rgba(255,255,255,0.4)"/>
+    </svg>
+</div>
+
 <div class="container" id="main-container">
     <form id="scream-form">
         <input type="text" id="scream-input" placeholder="SCREAM" autocomplete="off" maxlength="140" autofocus>
@@ -108,11 +247,114 @@
     const feedback = document.getElementById('feedback');
     const enterBtn = document.getElementById('enter-void');
     const container = document.getElementById('main-container');
+    const unicornJumpscare = document.getElementById('unicorn-jumpscare');
+    const unicornSvg = document.getElementById('unicorn-svg');
+    
+    let jumpscareActive = false;
+    let audioContext = null;
+
+    // Generate a horrifying scream sound using Web Audio API
+    function playScreamSound() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        const duration = 0.8;
+        const sampleRate = audioContext.sampleRate;
+        const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        // Generate chaotic scream-like waveform
+        for (let i = 0; i < data.length; i++) {
+            const t = i / sampleRate;
+            const progress = i / data.length;
+            
+            // Base frequencies that sweep up (like a scream)
+            const freq1 = 200 + progress * 800 + Math.sin(t * 50) * 100;
+            const freq2 = 400 + progress * 600;
+            const freq3 = 150 + Math.sin(t * 30) * 50;
+            
+            // Combine multiple oscillators for harsh sound
+            let sample = Math.sin(t * freq1 * Math.PI * 2) * 0.3;
+            sample += Math.sin(t * freq2 * Math.PI * 2) * 0.2;
+            sample += Math.sin(t * freq3 * Math.PI * 2) * 0.15;
+            
+            // Add noise/distortion
+            sample += (Math.random() - 0.5) * 0.4;
+            
+            // Waveshaping distortion
+            sample = Math.tanh(sample * 3);
+            
+            // Tremolo effect
+            sample *= 1 + Math.sin(t * 40) * 0.3;
+            
+            // Envelope: quick attack, sustain, quick decay at end
+            let envelope = 1;
+            if (progress < 0.05) envelope = progress / 0.05;
+            if (progress > 0.85) envelope = (1 - progress) / 0.15;
+            
+            data[i] = sample * envelope * 0.7;
+        }
+        
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        
+        // Add some reverb-like effect with delay
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.8;
+        
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        source.start();
+    }
+
+    // Trigger the demented unicorn jumpscare
+    function triggerJumpscare() {
+        if (jumpscareActive) return;
+        jumpscareActive = true;
+        
+        unicornJumpscare.classList.add('active');
+        playScreamSound();
+        
+        // Alternate between mouth states rapidly
+        let mouthInterval = setInterval(() => {
+            unicornSvg.classList.toggle('screaming');
+        }, 100);
+        
+        // Start with screaming state
+        unicornSvg.classList.add('screaming');
+        
+        // Remove after 1 second
+        setTimeout(() => {
+            clearInterval(mouthInterval);
+            unicornJumpscare.classList.remove('active');
+            unicornSvg.classList.remove('screaming');
+            jumpscareActive = false;
+        }, 1000);
+    }
+
+    // 10% chance check
+    function maybeJumpscare() {
+        if (Math.random() < 0.10) {
+            triggerJumpscare();
+        }
+    }
+
+    // Trigger on keypress while typing
+    input.addEventListener('keydown', (e) => {
+        // Don't trigger on Enter (that's handled by submit)
+        if (e.key !== 'Enter') {
+            maybeJumpscare();
+        }
+    });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = input.value.trim();
         if (!text) return;
+
+        // 10% chance on submit too
+        maybeJumpscare();
 
         input.style.transform = `translate(${Math.random()*10-5}px, ${Math.random()*10-5}px)`;
         setTimeout(() => input.style.transform = 'none', 50);
