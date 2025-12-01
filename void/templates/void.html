@@ -8,11 +8,13 @@
 
     .scream {
         position: absolute;
-        white-space: nowrap;
+        white-space: pre-wrap;
         pointer-events: none;
         opacity: 0;
         animation: fadeIn 2s forwards;
         transition: opacity 0.5s ease;
+        max-width: 300px;
+        text-align: center;
     }
 
     @keyframes fadeIn {
@@ -27,18 +29,37 @@
         transition: filter 5s ease;
     }
 
+    #face-canvas {
+        display: none;
+    }
+    
+    #fullscreen-eye-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 1500;
+    }
+
     #eye-glyph {
-        position: absolute;
+        position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        display: flex;
+        display: none;
         gap: 60px;
         opacity: 0.35;
         pointer-events: auto;
         filter: blur(0.4px);
         z-index: 100;
-        transition: opacity 0.4s ease;
+        transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s ease;
+    }
+
+    #eye-glyph .eye-row {
+        display: flex;
+        gap: 60px;
     }
 
     .eye {
@@ -66,22 +87,63 @@
     .eye.left::after { box-shadow: -6px 0 20px rgba(255,255,255,0.3); }
     .eye.right::after { box-shadow: 6px 0 20px rgba(255,255,255,0.3); }
 
-    @keyframes slowPulse {
-        0%, 100% { transform: scaleX(1); }
-        50% { transform: scaleX(0.8); }
-    }
-
     body.eyes-open #eye-glyph {
         opacity: 0.9;
         filter: none;
     }
 
-    body.eyes-open #void-container .scream {
+    #camera-video {
+        display: none;
+    }
+    
+    #webcam-canvas {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        width: 64px;
+        height: 48px;
+        pointer-events: none;
+        z-index: 2001;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        opacity: 0.1;
+    }
+    
+
+    body.void-revealed #void-container .scream {
         opacity: 1 !important;
         color: rgba(255, 255, 255, 0.95) !important;
         text-shadow: 0 0 18px rgba(255, 255, 255, 0.6);
     }
     
+    /* Blink Mode - Squinting Eyes */
+    body.blink-mode .eye {
+        height: 12px; /* Much narrower */
+        border-radius: 50% / 80%;
+        border-width: 3px;
+        background: rgba(0, 0, 0, 0.5);
+        animation: squintPulse 4s ease-in-out infinite;
+    }
+
+    body.blink-mode .eye::after {
+        width: 14px;
+        height: 14px;
+        /* Pupil moves slightly */
+        animation: search 10s infinite;
+    }
+
+    @keyframes squintPulse {
+        0%, 100% { transform: scaleX(1); }
+        50% { transform: scaleX(0.9); }
+    }
+
+    @keyframes search {
+        0%, 100% { transform: translate(-50%, -50%); }
+        20% { transform: translate(-20%, -50%); }
+        40% { transform: translate(-80%, -50%); }
+        60% { transform: translate(-50%, -50%); }
+        80% { transform: translate(-50%, -50%); }
+    }
+
     .return-link {
         position: fixed;
         bottom: 40px;
@@ -101,6 +163,22 @@
         box-shadow: 0 0 10px rgba(0,0,0,1);
     }
     
+    #fall-deeper-btn {
+        bottom: 120px;
+        font-size: 1.2rem;
+        border-color: #600;
+        color: #a00;
+        opacity: 0.4;
+    }
+    
+    #fall-deeper-btn:hover {
+        border-color: #f00;
+        color: #f00;
+        text-shadow: 0 0 10px #f00;
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+        animation: shake 0.2s infinite;
+    }
+
     .return-link:hover {
         color: #fff;
         border-color: #fff;
@@ -110,7 +188,199 @@
         letter-spacing: 6px;
         animation: shake 0.4s infinite;
     }
+
+    /* Fake Wikipedia Overlay - High Fidelity */
+    #fake-wiki-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #ffffff;
+        color: #202122;
+        font-family: sans-serif;
+        z-index: 9999;
+        display: none;
+        overflow-y: scroll;
+        cursor: auto;
+        transition: background-color 0.3s ease;
+    }
     
+    #wiki-body-text {
+        transition: color 0.3s ease;
+    }
+    
+    #wiki-body-text a {
+        transition: color 0.3s ease;
+    }
+
+    .mw-page-container {
+        display: flex;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0;
+    }
+
+    .mw-sidebar {
+        width: 176px;
+        padding: 20px 0;
+        flex-shrink: 0;
+        font-size: 0.875em;
+    }
+
+    .mw-logo {
+        display: block;
+        width: 135px;
+        height: 135px;
+        margin: 0 auto 20px;
+        background-image: url('https://upload.wikimedia.org/wikipedia/en/8/80/Wikipedia-logo-v2.svg');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        opacity: 0.9;
+    }
+
+    .mw-sidebar-list {
+        list-style: none;
+        padding: 0 12px;
+        margin: 0;
+    }
+
+    .mw-sidebar-list li {
+        margin-bottom: 6px;
+    }
+
+    .mw-sidebar-list a {
+        color: #0645ad;
+        text-decoration: none;
+    }
+
+    .mw-sidebar-list a:hover {
+        text-decoration: underline;
+    }
+
+    .mw-content-container {
+        flex-grow: 1;
+        padding: 20px 40px;
+        background: #fff;
+        border-left: 1px solid #a7d7f9;
+        position: relative;
+    }
+
+    .mw-header {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 30px;
+        font-size: 0.8em;
+        gap: 10px;
+    }
+
+    .mw-header a { color: #0645ad; text-decoration: none; }
+
+    .firstHeading {
+        font-family: 'Linux Libertine', 'Georgia', 'Times', serif;
+        font-size: 2.4em;
+        font-weight: normal;
+        border-bottom: 1px solid #a2a9b1;
+        margin-bottom: 0.2em;
+        padding-bottom: 0;
+        line-height: 1.3;
+    }
+
+    .mw-body-content {
+        font-size: 0.95em;
+        line-height: 1.6;
+        color: #202122;
+    }
+
+    .mw-body-content p { margin: 0.5em 0 1em; }
+    .mw-body-content h2 { 
+        font-family: 'Linux Libertine', 'Georgia', 'Times', serif;
+        font-weight: normal;
+        font-size: 1.8em;
+        border-bottom: 1px solid #a2a9b1;
+        margin: 1em 0 0.5em;
+        padding-bottom: 0.2em;
+    }
+
+    .mw-body-content a { color: #3366cc; text-decoration: none; }
+    .mw-body-content a:hover { text-decoration: underline; }
+
+    .infobox {
+        border: 1px solid #a2a9b1;
+        background-color: #f8f9fa;
+        color: #202122;
+        margin: 0.5em 0 0.5em 1em;
+        padding: 0.2em;
+        float: right;
+        clear: right;
+        width: 300px;
+        font-size: 88%;
+        line-height: 1.5em;
+    }
+    
+    .infobox-header {
+        text-align: center;
+        background-color: #e1e1e1;
+        font-weight: bold;
+        padding: 5px;
+    }
+
+    .infobox-image {
+        padding: 10px;
+        text-align: center;
+    }
+    
+    .infobox-image img {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #ccc;
+    }
+
+    .word-span {
+        display: inline-block;
+        position: relative;
+        white-space: pre;
+        transition: color 0.2s;
+    }
+
+    /* "Attack" classes */
+    .attacking-word {
+        position: fixed !important;
+        z-index: 10000;
+        pointer-events: none;
+    }
+    
+    .wait-what {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        font-size: 6rem;
+        color: rgba(0,0,0,0.03);
+        font-weight: bold;
+        pointer-events: none;
+        transform: rotate(-15deg);
+        animation: ghostFade 6s ease-in-out infinite;
+    }
+
+    @keyframes ghostFade {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 1; }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translate(0, 0); }
+        10% { transform: translate(-2px, 2px); }
+        20% { transform: translate(2px, -2px); }
+        30% { transform: translate(-2px, -2px); }
+        40% { transform: translate(2px, 2px); }
+        50% { transform: translate(-2px, 2px); }
+        60% { transform: translate(2px, -2px); }
+        70% { transform: translate(-2px, -2px); }
+        80% { transform: translate(2px, 2px); }
+        90% { transform: translate(-2px, 2px); }
+    }
+
     .whiteout-active {
         animation: whiteout 1.5s forwards ease-in;
     }
@@ -123,6 +393,12 @@
 {% endblock %}
 
 {% block content %}
+<video id="camera-video" autoplay muted></video>
+<canvas id="webcam-canvas"></canvas>
+<canvas id="face-canvas"></canvas>
+
+<canvas id="fullscreen-eye-canvas"></canvas>
+
 <div id="eye-glyph">
     <div class="eye left"></div>
     <div class="eye right"></div>
@@ -132,15 +408,672 @@
     <!-- Screams will drift here -->
 </div>
 
+<a href="#" class="return-link" id="fall-deeper-btn">FALL DEEPER</a>
 <a href="{{ url_for('void.index') }}" class="return-link" id="wake-up-btn">WAKE UP</a>
+
+<div id="fake-wiki-overlay">
+    <div class="mw-page-container">
+        <div class="mw-sidebar">
+            <a href="#" class="mw-logo"></a>
+            <ul class="mw-sidebar-list">
+                <li><a href="#">Main page</a></li>
+                <li><a href="#">Contents</a></li>
+                <li><a href="#">Current events</a></li>
+                <li><a href="#">Random article</a></li>
+                <li><a href="#">About Wikipedia</a></li>
+                <li><a href="#">Contact us</a></li>
+                <li><a href="#">Donate</a></li>
+            </ul>
+            <div style="margin-top: 20px; padding-left: 12px; font-size: 0.85em; color: #54595d;">
+                <strong>Contribute</strong>
+                <ul class="mw-sidebar-list" style="margin-top: 5px;">
+                    <li><a href="#">Help</a></li>
+                    <li><a href="#">Learn to edit</a></li>
+                    <li><a href="#">Community portal</a></li>
+                    <li><a href="#">Recent changes</a></li>
+                    <li><a href="#">Upload file</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="mw-content-container">
+            <div class="mw-header">
+                <a href="#">Not logged in</a>
+                <a href="#">Talk</a>
+                <a href="#">Contributions</a>
+                <a href="#">Create account</a>
+                <a href="#">Log in</a>
+            </div>
+            <div class="mw-body-content" id="wiki-body-text">
+                <div class="infobox">
+                    <div class="infobox-header">Semantic satiation</div>
+                    <div class="infobox-image">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/June_odd-eyed-cat.jpg/440px-June_odd-eyed-cat.jpg" alt="An odd-eyed cat">
+                        <div style="font-size: 0.9em; padding-top: 5px;">A visual representation of dissociation.</div>
+                    </div>
+                    <div style="padding: 5px;">
+                        <strong>Other names</strong><br>
+                        Verbal satiation
+                    </div>
+                    <div style="padding: 5px; background: #f8f9fa;">
+                        <strong>Specialty</strong><br>
+                        <a href="#">Psychology</a>, <a href="#">Cognitive science</a>
+                    </div>
+                </div>
+                
+                <h1 class="firstHeading">Semantic satiation</h1>
+                <div style="font-size: 0.85em; color: #54595d; margin-bottom: 1em;">From Wikipedia, the free encyclopedia</div>
+                
+                <p><b>Semantic satiation</b> (also known as <b>verbal satiation</b>) is a psychological phenomenon in which repetition causes a word or phrase to temporarily lose meaning for the listener, who then perceives the speech as repeated meaningless sounds. Extended inspection or analysis (staring at the word or phrase for a long time) in place of repetition also produces the same effect.</p>
+                
+                <p>The phenomenon was first described and named by <a href="#">Leon Jakobovits James</a> in his 1962 doctoral dissertation at <a href="#">McGill University</a>. Prior to that, the expression "verbal satiation" had been used along with terms such as "cortical inhibition" and "reactive inhibition" to describe the effect.</p>
+                
+                <h2>History and research</h2>
+                <p>Jakobovits James presented several experimental tasks demonstrating the operation of the semantic satiation effect. He argued that it is a form of reactive inhibition that applies to the cognitive processing of verbal symbols. According to his theory, when a verbal cell (a neural circuit representing the meaning of a word) is repeatedly fired, its ability to fire is reduced, resulting in a reduction of the intensity of the meaning.</p>
+                <p>Jakobovits James cites the work of <a href="#">Titchener</a> (1915), who wrote: "Repeat aloud some word—the better, some common word... and the meaning drops out of it; the word becomes a mere sound, a pattern of sensation on the ear, a physiological event in the brain, with no psychological significance whatsoever."</p>
+                
+                <h2>Applications</h2>
+                <p>Semantic satiation has been used in the treatment of <a href="#">stuttering</a>. The repetition of stuttered words can lead to a reduction in the intensity of the negative emotion attached to the speech act.</p>
+                <p>In the study of <a href="#">slang</a>, semantic satiation is often cited as a mechanism by which terms lose their original taboo or shocking quality, becoming part of common discourse. For instance, the word "void" has lost its original terror-inducing connotation through overuse in online communities.</p>
+                
+                <h2>See also</h2>
+                <ul>
+                    <li><a href="#">Gestaltzerfall</a></li>
+                    <li><a href="#">Jamais vu</a></li>
+                    <li><a href="#">Mantra</a></li>
+                    <li><a href="#">Olfactory fatigue</a></li>
+                    <li><a href="#">The Void</a></li>
+                </ul>
+                
+                <div style="margin-top: 30px; border-top: 1px solid #a2a9b1; padding-top: 10px; font-size: 0.85em; color: #54595d;">
+                    This page was last edited on 24 November 2025, at 11:52 (UTC).<br>
+                    Text is available under the <a href="#">Creative Commons Attribution-ShareAlike License 4.0</a>; additional terms may apply.
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="wait-what">wait what?</div>
+</div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 <script>
+    // Configuration Parameters - All adjustable values in one place
+    const EYE_CONFIG = {
+        // Eye dimensions and positioning (fullscreen coordinates)
+        leftEye: {
+            centerX: 0.35,      // 35% from left edge
+            centerY: 0.45,      // 45% from top edge
+            width: 300,         // Eye drawing area width
+            height: 200         // Eye drawing area height
+        },
+        rightEye: {
+            centerX: 0.65,      // 65% from left edge
+            centerY: 0.45,      // 45% from top edge  
+            width: 300,         // Eye drawing area width
+            height: 200         // Eye drawing area height
+        },
+        
+        // Corner positioning
+        corners: {
+            marginX: 50,        // Distance from edges
+            leftOffsetY: 5,     // Vertical offset multiplier for left corner
+            rightOffsetY: 3,    // Vertical offset multiplier for right corner
+            centerOffset: 2.5   // Center adjustment factor
+        },
+        
+        // Spline curve parameters
+        spline: {
+            tension: 0.9,        // Curve smoothness (0-1)
+            peakHeight: 500,      // Maximum eye opening height (pixels)
+            closedGap: 8,        // Minimum gap when closed (pixels)
+            controlOffset: 0.3,  // Control point distance (0-1, fraction of width)
+            curveMagnitude: 25,  // Vertical curve strength multiplier
+            thicknessMain: 3,    // Main eyelid line thickness
+            thicknessDetail: 2   // Detail line thickness
+        },
+        
+        // Eye tracking sensitivity
+        tracking: {
+            opennessSensitivity: 15,  // Eye openness detection multiplier
+        },
+        
+        // Void revelation intensity
+        voidIntensity: {
+            eyeWeight: 0.7,           // How much eye openness affects intensity (0-1)
+            fractalWeight: 0.3,       // How much fractal chaos affects intensity (0-1)
+            baseIntensity: 0.1,       // Minimum intensity when eyes closed (0-1)
+            maxIntensity: 1.0,        // Maximum intensity when fully active (0-1)
+            smoothing: 0.1            // Intensity change smoothing factor (0-1)
+        },
+        
+        // Fractal generation
+        fractal: {
+            complexity: 7,           // Recursion depth (1-10)
+            chaos: 1.2,             // Randomness factor (0-2)
+            minSize: 2,             // Minimum fragment size (pixels)
+            maxSize: 200,            // Maximum fragment size when fully open
+            fragmentRange: {
+                min: 3,             // Minimum fragments per level
+                max: 7              // Additional random fragments
+            },
+            geometry: {
+                distanceMin: 0.05,   // Minimum distance from center (0-1)
+                distanceMax: 0.7,   // Maximum distance from center (0-1)
+                sizeMin: 0.3,       // Minimum fragment size (0-1)
+                sizeMax: 0.4,       // Maximum fragment size (0-1)
+                rotationSpeed: 0.05 // Fragment rotation speed
+            },
+            shapes: {
+                triangle: 0.33,     // Probability of triangle (0-1)
+                rectangle: 0.33,    // Probability of rectangle (0-1)
+                pentagon: 0.34      // Probability of pentagon (0-1)
+            }
+        },
+        
+        // Glitch effects
+        glitch: {
+            intensity: 0.5,         // Base glitch strength (0-1)
+            colorShift: 0.3,        // RGB channel displacement (0-1)
+            noiseScale: 0.1,        // Noise texture scale (0-1)
+            timeSpeed: 0.02,        // Animation speed (0-1)
+            pixelationChance: 0.05, // Random pixel corruption chance (0-1)
+            noiseAmplitude: {
+                red: 50,            // Red channel noise strength
+                green: 30,          // Green channel noise strength
+                blue: 70            // Blue channel noise strength
+            },
+            waveFrequency: {
+                x: 0.1,             // Horizontal wave frequency
+                y: 0.1,             // Vertical wave frequency
+                timeX: 3,           // Time-based X wave speed
+                timeY: 2            // Time-based Y wave speed
+            }
+        },
+        
+        // Color and visual settings
+        colors: {
+            splineStroke: 'rgba(255, 255, 255, 0.9)', // Eyelid color
+            fractalHue: 50,         // Base hue rotation speed
+            fractalSaturation: 70,  // Color saturation (0-100)
+            fractalLightness: 60,   // Color lightness (0-100)
+            fractalAlpha: 0.8       // Fractal opacity (0-1)
+        }
+    };
+
     const voidContainer = document.getElementById('void-container');
     const wakeUpBtn = document.getElementById('wake-up-btn');
+    const fallDeeperBtn = document.getElementById('fall-deeper-btn');
+    const wikiOverlay = document.getElementById('fake-wiki-overlay');
+    const wikiBody = document.getElementById('wiki-body-text');
     const eyeGlyph = document.getElementById('eye-glyph');
+    const cameraVideo = document.getElementById('camera-video');
+    const faceCanvas = document.getElementById('face-canvas');
+    const faceCtx = faceCanvas.getContext('2d');
+    const webcamCanvas = document.getElementById('webcam-canvas');
+    const webcamCtx = webcamCanvas.getContext('2d');
+    
+    // Fullscreen eye canvas
+    const eyeCanvas = document.getElementById('fullscreen-eye-canvas');
+    const eyeCtx = eyeCanvas.getContext('2d');
+    
+    // Set canvas to match screen size
+    function resizeEyeCanvas() {
+        eyeCanvas.width = window.innerWidth;
+        eyeCanvas.height = window.innerHeight;
+    }
+    
+    resizeEyeCanvas();
+    window.addEventListener('resize', resizeEyeCanvas);
+    
     let sessionStartTime = Date.now();
+    let faceMesh = null;
+    let isDetecting = false;
+    let lastDetectionTime = 0;
+    const DETECTION_INTERVAL = 33; // ~30 FPS
+    let animationTime = 0;
+    let currentVoidIntensity = 0;
+    let targetVoidIntensity = 0;
+    let currentFractalActivity = 0;
+    let horrorAudio = null;
+    let lastEyeOpenness = 1;
+
+    // Procedural horror bed so we don't depend on external audio assets
+    function createNoiseBuffer(ctx) {
+        const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            const fade = 1 - (i / data.length);
+            data[i] = (Math.random() * 2 - 1) * fade;
+        }
+        return buffer;
+    }
+
+    function createDistortionCurve(amount) {
+        const samples = 44100;
+        const curve = new Float32Array(samples);
+        const deg = Math.PI / 180;
+        for (let i = 0; i < samples; ++i) {
+            const x = (i * 2) / samples - 1;
+            curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+        }
+        return curve;
+    }
+
+    function buildHorrorScore() {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const masterGain = ctx.createGain();
+        masterGain.gain.value = 0.0001;
+        masterGain.connect(ctx.destination);
+
+        const distortion = ctx.createWaveShaper();
+        distortion.curve = createDistortionCurve(80);
+        distortion.oversample = '4x';
+        distortion.connect(masterGain);
+
+        const lowOsc = ctx.createOscillator();
+        lowOsc.type = 'sawtooth';
+        lowOsc.frequency.value = 30;
+        const lowGain = ctx.createGain();
+        lowGain.gain.value = 0.08;
+        lowOsc.connect(lowGain).connect(distortion);
+
+        const subOsc = ctx.createOscillator();
+        subOsc.type = 'square';
+        subOsc.frequency.value = 17;
+        subOsc.detune.value = -15;
+        const subGain = ctx.createGain();
+        subGain.gain.value = 0.03;
+        subOsc.connect(subGain).connect(distortion);
+
+        const highOsc = ctx.createOscillator();
+        highOsc.type = 'triangle';
+        highOsc.frequency.value = 210;
+        highOsc.detune.value = 12;
+        const highGain = ctx.createGain();
+        highGain.gain.value = 0.02;
+        highOsc.connect(highGain).connect(distortion);
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = createNoiseBuffer(ctx);
+        noise.loop = true;
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.value = 420;
+        noiseFilter.Q.value = 0.6;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.value = 0.008;
+        noise.connect(noiseFilter).connect(noiseGain).connect(distortion);
+
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 0.25;
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 18;
+        lfo.connect(lfoGain).connect(lowOsc.frequency);
+
+        const filterLfo = ctx.createOscillator();
+        filterLfo.type = 'triangle';
+        filterLfo.frequency.value = 0.15;
+        const filterGain = ctx.createGain();
+        filterGain.gain.value = 180;
+        filterLfo.connect(filterGain).connect(noiseFilter.frequency);
+
+        lowOsc.start();
+        subOsc.start();
+        highOsc.start();
+        noise.start();
+        lfo.start();
+        filterLfo.start();
+
+        horrorAudio = {
+            ctx,
+            masterGain,
+            lowGain,
+            highGain,
+            noiseGain,
+            subGain
+        };
+    }
+
+    let autoResumeInterval = null;
+    let triedAutoplay = false;
+
+    function startHorrorAudio(force = false) {
+        if (!horrorAudio) {
+            buildHorrorScore();
+        }
+        if (force && horrorAudio.ctx.state === 'suspended') {
+            horrorAudio.ctx.resume();
+        } else if (!force && horrorAudio.ctx.state === 'suspended') {
+            // Without user gesture this may fail silently; a later force will pick it up.
+            horrorAudio.ctx.resume().catch(() => {});
+        }
+        updateHorrorAudio(lastEyeOpenness);
+    }
+
+    function updateHorrorAudio(eyeOpenness = 1) {
+        lastEyeOpenness = Math.max(0, Math.min(1, eyeOpenness));
+        if (!horrorAudio) return;
+
+        const closeness = 1 - lastEyeOpenness; // 0 = wide open, 1 = fully closed
+        const now = horrorAudio.ctx.currentTime;
+
+        const masterTarget = 0.08 + closeness * 0.35;
+        const noiseTarget = 0.03 + closeness * 0.25;
+        const lowTarget = 0.07 + closeness * 0.2;
+        const highTarget = 0.015 + closeness * 0.08;
+
+        horrorAudio.masterGain.gain.linearRampToValueAtTime(masterTarget, now + 0.25);
+        horrorAudio.noiseGain.gain.linearRampToValueAtTime(noiseTarget, now + 0.25);
+        horrorAudio.lowGain.gain.linearRampToValueAtTime(lowTarget, now + 0.25);
+        horrorAudio.highGain.gain.linearRampToValueAtTime(highTarget, now + 0.25);
+    }
+
+    function armHorrorAutoplay() {
+        const unlock = () => startHorrorAudio(true);
+        const eagerAttempt = () => startHorrorAudio(false);
+
+        // Keep retrying resume while page is visible to maximize autoplay chances
+        if (!autoResumeInterval) {
+            autoResumeInterval = setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    eagerAttempt();
+                }
+            }, 1500);
+        }
+
+        ['pointerdown', 'touchstart', 'keydown', 'visibilitychange', 'focus'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                if (evt === 'visibilitychange' && document.visibilityState !== 'visible') return;
+                unlock();
+            }, { once: evt !== 'visibilitychange' });
+        });
+
+        // Try immediately for browsers that allow autoplay
+        if (!triedAutoplay) {
+            triedAutoplay = true;
+            eagerAttempt();
+        }
+    }
+    
+    // Parameter validation and bounds checking
+    function validateConfig() {
+        // Clamp values to safe ranges
+        EYE_CONFIG.spline.tension = Math.max(0, Math.min(1, EYE_CONFIG.spline.tension));
+        EYE_CONFIG.fractal.complexity = Math.max(1, Math.min(10, Math.floor(EYE_CONFIG.fractal.complexity)));
+        EYE_CONFIG.glitch.intensity = Math.max(0, Math.min(1, EYE_CONFIG.glitch.intensity));
+        EYE_CONFIG.tracking.opennessSensitivity = Math.max(1, Math.min(50, EYE_CONFIG.tracking.opennessSensitivity));
+        
+        // No CSS variables needed for fullscreen eyes
+        
+        console.log('EYE_CONFIG validated and applied');
+    }
+    
+    // Real-time parameter adjustment functions
+    window.updateEyeConfig = function(path, value) {
+        const keys = path.split('.');
+        let obj = EYE_CONFIG;
+        for (let i = 0; i < keys.length - 1; i++) {
+            obj = obj[keys[i]];
+        }
+        obj[keys[keys.length - 1]] = value;
+        validateConfig();
+        console.log(`Updated ${path} to ${value}`);
+    };
+    
+    // Quick access functions for common adjustments
+    window.setEyePositions = (leftX, leftY, rightX, rightY) => {
+        updateEyeConfig('leftEye.centerX', leftX);
+        updateEyeConfig('leftEye.centerY', leftY);
+        updateEyeConfig('rightEye.centerX', rightX);
+        updateEyeConfig('rightEye.centerY', rightY);
+    };
+    window.setEyeSizes = (width, height) => {
+        updateEyeConfig('leftEye.width', width);
+        updateEyeConfig('leftEye.height', height);
+        updateEyeConfig('rightEye.width', width);
+        updateEyeConfig('rightEye.height', height);
+    };
+    window.setSplineTension = (tension) => updateEyeConfig('spline.tension', tension);
+    window.setFractalChaos = (chaos) => updateEyeConfig('fractal.chaos', chaos);
+    window.setGlitchIntensity = (intensity) => updateEyeConfig('glitch.intensity', intensity);
+    window.setVoidIntensity = (eyeWeight, fractalWeight) => {
+        updateEyeConfig('voidIntensity.eyeWeight', eyeWeight);
+        updateEyeConfig('voidIntensity.fractalWeight', fractalWeight);
+    };
+    window.setVoidSmoothing = (smoothing) => updateEyeConfig('voidIntensity.smoothing', smoothing);
+    
+    // Preset configurations
+    const PRESETS = {
+        default: {
+            spline: { tension: 0.6, peakHeight: 60, curveMagnitude: 30 },
+            fractal: { complexity: 5, chaos: 0.8, maxSize: 20 },
+            glitch: { intensity: 0.5, timeSpeed: 0.02 }
+        },
+        minimal: {
+            spline: { tension: 0.3, peakHeight: 40, curveMagnitude: 15 },
+            fractal: { complexity: 3, chaos: 0.4, maxSize: 10 },
+            glitch: { intensity: 0.2, timeSpeed: 0.01 }
+        },
+        chaotic: {
+            spline: { tension: 0.9, peakHeight: 100, curveMagnitude: 50 },
+            fractal: { complexity: 8, chaos: 1.5, maxSize: 40 },
+            glitch: { intensity: 0.8, timeSpeed: 0.05 }
+        },
+        nightmare: {
+            spline: { tension: 1.0, peakHeight: 120, curveMagnitude: 60 },
+            fractal: { complexity: 10, chaos: 2.0, maxSize: 60 },
+            glitch: { intensity: 1.0, timeSpeed: 0.08 }
+        }
+    };
+    
+    window.loadPreset = function(presetName) {
+        if (!PRESETS[presetName]) {
+            console.error('Preset not found:', presetName);
+            return;
+        }
+        
+        const preset = PRESETS[presetName];
+        Object.keys(preset).forEach(category => {
+            Object.keys(preset[category]).forEach(key => {
+                updateEyeConfig(`${category}.${key}`, preset[category][key]);
+            });
+        });
+        
+        console.log(`Loaded preset: ${presetName}`);
+    };
+    
+    // Configuration save/load
+    window.saveConfig = function(name = 'custom') {
+        const config = JSON.stringify(EYE_CONFIG, null, 2);
+        localStorage.setItem(`eyeConfig_${name}`, config);
+        console.log(`Saved configuration as: ${name}`);
+        return config;
+    };
+    
+    window.loadConfig = function(name = 'custom') {
+        const saved = localStorage.getItem(`eyeConfig_${name}`);
+        if (saved) {
+            const config = JSON.parse(saved);
+            Object.assign(EYE_CONFIG, config);
+            validateConfig();
+            console.log(`Loaded configuration: ${name}`);
+            return true;
+        }
+        console.warn(`Configuration not found: ${name}`);
+        return false;
+    };
+    
+    // List available configurations
+    window.listConfigs = function() {
+        const configs = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('eyeConfig_')) {
+                configs.push(key.replace('eyeConfig_', ''));
+            }
+        }
+        console.log('Available configurations:', configs);
+        console.log('Available presets:', Object.keys(PRESETS));
+        return { saved: configs, presets: Object.keys(PRESETS) };
+    };
+    
+    // Stabilization system
+    const frameHistory = [];
+    const HISTORY_SIZE = 5;
+    const CONFIDENCE_THRESHOLD = 0.3; // Lowered for debugging
+    const MOVEMENT_THRESHOLD = 3; // pixels
+    
+    // Debug toggle - set to true to show camera video
+    const DEBUG_VIDEO = false;
+    
+    // Console helper for easy debug toggling
+    window.toggleDebugVideo = () => {
+        location.reload(); // Simple reload to apply new DEBUG_VIDEO state
+        console.log('Reload page and set DEBUG_VIDEO =', !DEBUG_VIDEO);
+    };
+    let monsterMode = false;
+    let chaosLevel = 0;
+    let wikiAttackMode = false;
+    
+    // Helper to wrap all words in spans for animation
+    function wrapWords(element) {
+        if (element.hasChildNodes()) {
+            element.childNodes.forEach(child => {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    if (child.textContent.trim().length > 0) {
+                        const newHtml = child.textContent
+                            .split(/(\s+)/)
+                            .map(part => part.trim().length > 0 ? `<span class="word-span">${part}</span>` : part)
+                            .join('');
+                        const temp = document.createElement('span');
+                        temp.innerHTML = newHtml;
+                        child.replaceWith(...temp.childNodes);
+                    }
+                } else if (child.nodeType === Node.ELEMENT_NODE && !child.classList.contains('infobox')) {
+                    wrapWords(child);
+                }
+            });
+        }
+    }
+
+    // Attack animation loop for wiki words
+    function animateWikiAttack() {
+        if (!wikiAttackMode) return;
+        
+        const words = document.querySelectorAll('.attacking-word');
+        words.forEach(word => {
+            let x = parseFloat(word.dataset.x);
+            let y = parseFloat(word.dataset.y);
+            let vx = parseFloat(word.dataset.vx);
+            let vy = parseFloat(word.dataset.vy);
+            
+            // Attract to each other (clustering) or swarm center
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            
+            vx += (cx - x) * 0.0005;
+            vy += (cy - y) * 0.0005;
+            
+            // Random jitter
+            vx += (Math.random() - 0.5) * 2;
+            vy += (Math.random() - 0.5) * 2;
+            
+            x += vx;
+            y += vy;
+            
+            word.dataset.vx = vx;
+            word.dataset.vy = vy;
+            word.dataset.x = x;
+            word.dataset.y = y;
+            
+            word.style.left = `${x}px`;
+            word.style.top = `${y}px`;
+            word.style.transform = `rotate(${Math.random() * 360}deg)`;
+        });
+        
+        requestAnimationFrame(animateWikiAttack);
+    }
+
+    // Wiki Page Creeping Insanity
+    let wikiInsanityLevel = 0;
+    let wikiInsanityInterval = null;
+    
+    function startWikiInsanity() {
+        wikiInsanityLevel = 0;
+        
+        // Get all word spans
+        const allWords = Array.from(document.querySelectorAll('.word-span'));
+        
+        // Clear any existing interval
+        if (wikiInsanityInterval) {
+            clearInterval(wikiInsanityInterval);
+        }
+        
+        wikiInsanityInterval = setInterval(() => {
+            // Exponential growth: starts slow, accelerates rapidly
+            wikiInsanityLevel += 0.02 * Math.pow(1.15, wikiInsanityLevel);
+            const intensity = Math.min(wikiInsanityLevel, 10) / 10; // 0 to 1
+            
+            // Background fade to black (exponential)
+            const bgFade = Math.pow(intensity, 1.5); // More aggressive curve
+            const bgColor = Math.floor(255 * (1 - bgFade));
+            wikiOverlay.style.backgroundColor = `rgb(${bgColor}, ${bgColor}, ${bgColor})`;
+            
+            // Text fade to red (exponential)
+            const redIntensity = Math.pow(intensity, 1.8);
+            const textRed = Math.floor(255 * redIntensity + 50 * (1 - redIntensity));
+            const textOther = Math.floor(50 * (1 - redIntensity));
+            wikiBody.style.color = `rgb(${textRed}, ${textOther}, ${textOther})`;
+            
+            // Links also turn red
+            const links = wikiBody.querySelectorAll('a');
+            links.forEach(link => {
+                link.style.color = `rgb(${textRed}, ${textOther}, ${textOther})`;
+            });
+            
+            // Eyes fade in (behind the page)
+            const eyeOpacity = Math.pow(intensity, 2) * 0.8;
+            eyeGlyph.style.opacity = eyeOpacity;
+            if (eyeOpacity > 0.1) {
+                eyeGlyph.style.display = 'flex';
+                eyeGlyph.style.zIndex = '1'; // Behind wiki content
+            }
+            
+            // Words disappear (exponential - subtle at first, then rapid)
+            const disappearChance = Math.pow(intensity, 3) * 0.15; // Cubic curve for very subtle start
+            allWords.forEach(word => {
+                if (word.style.opacity !== '0' && Math.random() < disappearChance) {
+                    word.style.transition = 'opacity 0.5s ease';
+                    word.style.opacity = '0';
+                }
+            });
+            
+            // Stop when fully insane
+            if (wikiInsanityLevel >= 10) {
+                clearInterval(wikiInsanityInterval);
+            }
+        }, 100); // Update every 100ms
+    }
+    
+    function stopWikiInsanity() {
+        if (wikiInsanityInterval) {
+            clearInterval(wikiInsanityInterval);
+            wikiInsanityInterval = null;
+        }
+        wikiInsanityLevel = 0;
+    }
+
+    // Monster shape targets (rough "face")
+    const monsterTargets = [
+        {x: 30, y: 35}, // Left Eye
+        {x: 70, y: 35}, // Right Eye
+        {x: 50, y: 70}, // Mouth center
+        {x: 35, y: 65}, // Mouth L
+        {x: 65, y: 65}  // Mouth R
+    ];
     
     // Zalgo text characters
     const ZALGO_UP = ['\u030d', '\u030e', '\u0304', '\u0305', '\u033f', '\u0311', '\u0306', '\u0310', '\u0352', '\u0357', '\u0351', '\u0307', '\u0308', '\u030a', '\u0342', '\u0343', '\u0344', '\u034a', '\u034b', '\u034c', '\u0303', '\u0302', '\u030c', '\u0350', '\u0300', '\u0301', '\u030b', '\u030f', '\u0312', '\u0313', '\u0314', '\u033d', '\u0309', '\u0363', '\u0364', '\u0365', '\u0366', '\u0367', '\u0368', '\u0369', '\u036a', '\u036b', '\u036c', '\u036d', '\u036e', '\u036f', '\u033e', '\u035b', '\u0346', '\u031a'];
@@ -220,32 +1153,277 @@
         for (let el of children) {
             let x = parseFloat(el.style.left);
             let y = parseFloat(el.style.top);
-            x += parseFloat(el.dataset.vx);
-            y += parseFloat(el.dataset.vy);
             
-            if (x < -10) x = 110;
-            if (x > 110) x = -10;
-            if (y < -10) y = 110;
-            if (y > 110) y = -10;
+            if (monsterMode) {
+                // Monster Mode Logic: Attract to nearest target
+                if (!el.targetNode) {
+                    el.targetNode = monsterTargets[Math.floor(Math.random() * monsterTargets.length)];
+                }
+                
+                const tx = el.targetNode.x;
+                const ty = el.targetNode.y;
+                
+                // Ease towards target
+                x += (tx - x) * 0.02 * chaosLevel;
+                y += (ty - y) * 0.02 * chaosLevel;
+                
+                // Jitter
+                x += (Math.random() - 0.5) * chaosLevel * 2;
+                y += (Math.random() - 0.5) * chaosLevel * 2;
+                
+            } else {
+                // Standard Drift
+                x += parseFloat(el.dataset.vx);
+                y += parseFloat(el.dataset.vy);
+                
+                if (x < -10) x = 110;
+                if (x > 110) x = -10;
+                if (y < -10) y = 110;
+                if (y > 110) y = -10;
+            }
             
             el.style.left = `${x}vw`;
             el.style.top = `${y}vh`;
             
-            if (Math.random() < 0.005) {
+            if (Math.random() < 0.005 + (chaosLevel * 0.1)) {
                 el.style.transform = `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px) rotate(${Math.random()*360}deg)`;
-                setTimeout(() => {
-                    el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
-                }, 100);
+                if (!monsterMode) {
+                    setTimeout(() => {
+                        el.style.transform = `rotate(${(Math.random() - 0.5) * 20}deg)`;
+                    }, 100);
+                }
             }
         }
         
+        // Apply Eye Shake if active (from Fall Deeper)
+        if (eyeGlyph.dataset.shakeIntensity) {
+            const shake = parseFloat(eyeGlyph.dataset.shakeIntensity);
+            const sx = (Math.random() - 0.5) * shake;
+            const sy = (Math.random() - 0.5) * shake;
+            // Important: preserve the centering translate(-50%, -50%)
+            eyeGlyph.style.transform = `translate(calc(-50% + ${sx}px), calc(-50% + ${sy}px))`;
+        }
+
         const sessionDuration = (Date.now() - sessionStartTime) / 1000;
-        const insanity = Math.min(sessionDuration / 600, 1.0);
-        voidContainer.style.filter = `blur(${insanity * 2}px) contrast(${1 + insanity}) hue-rotate(${insanity * 90}deg)`;
+        const insanity = Math.min(sessionDuration / 600, 1.0) + chaosLevel;
+        voidContainer.style.filter = `blur(${Math.max(0, insanity * 2)}px) contrast(${1 + insanity}) hue-rotate(${insanity * 90}deg)`;
         
         requestAnimationFrame(animate);
     }
 
+    // Handle Wiki Links - Relapse Logic
+    wikiOverlay.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (link) {
+            e.preventDefault();
+            
+            // Stop the insanity progression
+            stopWikiInsanity();
+            
+            // 1. Prepare the Attack
+            wikiAttackMode = true;
+            
+            // Select all word spans
+            const spans = document.querySelectorAll('.word-span');
+            spans.forEach(span => {
+                const rect = span.getBoundingClientRect();
+                span.classList.add('attacking-word');
+                // Set initial fixed position matches current flow position
+                span.style.left = `${rect.left}px`;
+                span.style.top = `${rect.top}px`;
+                span.dataset.x = rect.left;
+                span.dataset.y = rect.top;
+                span.dataset.vx = (Math.random() - 0.5) * 10; // Initial explosion
+                span.dataset.vy = (Math.random() - 0.5) * 10;
+                span.style.color = '#000';
+            });
+
+            // Start animation loop
+            animateWikiAttack();
+
+            // 2. Relapse Sequence (Delayed)
+            setTimeout(() => {
+                document.body.style.transition = 'background 2s';
+                document.body.style.background = '#000';
+                wikiOverlay.style.transition = 'opacity 2s';
+                wikiOverlay.style.opacity = '0';
+                
+                setTimeout(() => {
+                    wikiOverlay.style.display = 'none';
+                    // Reset wiki styles for next time
+                    wikiOverlay.style.backgroundColor = '#ffffff';
+                    wikiBody.style.color = '#202122';
+                    
+                    eyeGlyph.style.display = 'flex';
+                    eyeGlyph.style.opacity = '0';
+                    eyeGlyph.style.transform = 'translate(-50%, -50%) scale(0.1)';
+                    eyeGlyph.style.zIndex = '100'; // Back to normal z-index
+                    
+                    // Build intensity for relapse eyes
+                    let relapseIntensity = 0;
+                    let relapseInterval = setInterval(() => {
+                        relapseIntensity += 0.1;
+                        const rGlow = relapseIntensity * 60;
+                        const rBright = 1 + (relapseIntensity * 5);
+                        eyeGlyph.style.filter = `drop-shadow(0 0 ${rGlow}px white) brightness(${rBright})`;
+                        
+                        const rShake = relapseIntensity * 15;
+                        const rx = (Math.random() - 0.5) * rShake;
+                        const ry = (Math.random() - 0.5) * rShake;
+                        eyeGlyph.style.transform = `translate(calc(-50% + ${rx}px), calc(-50% + ${ry}px)) scale(${0.1 + relapseIntensity})`;
+                        
+                        if (relapseIntensity > 1.5) clearInterval(relapseInterval);
+                    }, 50);
+
+                    // Eyes return aggressively
+                    setTimeout(() => {
+                        eyeGlyph.style.transition = 'all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                        eyeGlyph.style.opacity = '1';
+                        // Transform handled by interval above mostly, but ensure final state
+                        document.body.classList.add('eyes-open');
+                        
+                        // Play harsh sound if possible, then reset
+                        setTimeout(() => {
+                            // Corrupt placeholder logic
+                            const original = "SCREAM";
+                            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ@#%&?!";
+                            let corrupted = original.split('');
+                            const idx = Math.floor(Math.random() * original.length);
+                            corrupted[idx] = chars[Math.floor(Math.random() * chars.length)];
+                            
+                            window.location.href = "{{ url_for('void.index') }}?p=" + encodeURIComponent(corrupted.join(''));
+                        }, 1500);
+                    }, 500);
+                }, 2000);
+            }, 1500); // Wait 1.5s for the attack to be visible before fading
+        }
+    });
+
+    function triggerFallDeeper() {
+        monsterMode = true;
+        fallDeeperBtn.style.display = 'none';
+        wakeUpBtn.style.display = 'none';
+        
+        // If using fallback eyes, they're already visible, just enhance them
+        if (!usingFallbackEyes) {
+            // Show the simple eye glyph for the transition (MediaPipe version)
+            eyeGlyph.style.display = 'flex';
+            eyeGlyph.style.opacity = '1';
+            eyeGlyph.style.transform = 'translate(-50%, -50%)';
+        }
+        
+        // Phase 1: Build Chaos (Faster now)
+        let buildUp = setInterval(() => {
+            chaosLevel += 0.15; // Was 0.05 - much faster build up
+            
+            // Intensity effects on eyes
+            const intensity = Math.min(chaosLevel, 5) / 5; // 0 to 1
+            const glow = intensity * 50;
+            const brightness = 1 + (intensity * 4); // Up to 5x brightness
+            const shake = intensity * 10;
+            
+            eyeGlyph.style.filter = `drop-shadow(0 0 ${glow}px rgba(255,255,255,${intensity})) brightness(${brightness})`;
+            
+            // Intense Strobe/Shake via transform in animate loop, but we set properties here
+            eyeGlyph.dataset.shakeIntensity = shake;
+
+            // Random line breaks in text
+            const children = voidContainer.children;
+            for (let el of children) {
+                if (Math.random() < 0.1) {
+                    if (el.textContent.includes('\n')) {
+                        el.textContent = el.textContent.replace('\n', '');
+                    } else {
+                        const len = el.textContent.length;
+                        const idx = Math.floor(Math.random() * len);
+                        el.textContent = el.textContent.slice(0, idx) + '\n' + el.textContent.slice(idx);
+                    }
+                }
+            }
+
+            if (chaosLevel > 5) {
+                clearInterval(buildUp);
+                // Phase 2: Switch
+                document.body.style.background = '#fff';
+                voidContainer.style.display = 'none';
+                eyeGlyph.style.display = 'none';
+                eyeGlyph.style.filter = ''; // Reset for later
+                eyeGlyph.dataset.shakeIntensity = ''; // Clear shake
+                
+                // Show overlay and prep words
+                wikiOverlay.style.opacity = '1';
+                wikiOverlay.style.display = 'block';
+                wrapWords(wikiBody);
+                
+                // Start the creeping insanity on the wiki page
+                startWikiInsanity();
+            }
+        }, 100); // Was 200
+    }
+
+    // Clean API for void revelation state
+    function setVoidRevelation(isRevealed) {
+        document.body.classList.toggle('void-revealed', isRevealed);
+        const children = voidContainer.children;
+        for (let el of children) {
+            if (isRevealed) {
+                if (!el.dataset.prevOpacity) {
+                    el.dataset.prevOpacity = el.style.opacity;
+                }
+                el.style.opacity = '1';
+            } else {
+                const fallback = el.dataset.prevOpacity ?? el.dataset.baseOpacity ?? '';
+                el.style.opacity = fallback;
+                delete el.dataset.prevOpacity;
+            }
+        }
+    }
+
+    function getVoidRevelation() {
+        return document.body.classList.contains('void-revealed');
+    }
+
+    // Fall Deeper Button Logic
+    fallDeeperBtn.style.pointerEvents = 'auto'; // Ensure clickable
+    fallDeeperBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log("Fall deeper triggered");
+        triggerFallDeeper();
+    });
+
+    wakeUpBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.body.classList.add('whiteout-active');
+        setTimeout(() => {
+            window.location.href = "{{ url_for('void.index') }}";
+        }, 1200);
+    });
+
+    // Fallback to simple CSS eyes
+    let usingFallbackEyes = false;
+    
+    function activateFallbackEyes() {
+        console.log('Activating fallback CSS eyes...');
+        usingFallbackEyes = true;
+        
+        // Hide MediaPipe canvases
+        eyeCanvas.style.display = 'none';
+        webcamCanvas.style.display = 'none';
+        faceCanvas.style.display = 'none';
+        if (cameraVideo.srcObject) {
+            cameraVideo.srcObject.getTracks().forEach(track => track.stop());
+        }
+        
+        // Show simple eye glyph
+        eyeGlyph.style.display = 'flex';
+        
+        // Add hover interaction for simple eyes
+        eyeGlyph.addEventListener('mouseenter', () => setEyesOpen(true));
+        eyeGlyph.addEventListener('mouseleave', () => setEyesOpen(false));
+
+        startHorrorAudio();
+    }
+    
     function setEyesOpen(state) {
         document.body.classList.toggle('eyes-open', state);
         const children = voidContainer.children;
@@ -261,22 +1439,539 @@
                 delete el.dataset.prevOpacity;
             }
         }
+
+        updateHorrorAudio(state ? 1 : 0);
     }
 
-    wakeUpBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.body.classList.add('whiteout-active');
-        setTimeout(() => {
-            window.location.href = "{{ url_for('void.index') }}";
-        }, 1200);
-    });
+    // MediaPipe face mesh setup with iris tracking
+    async function initializeFaceMesh() {
+        try {
+            console.log('Starting face mesh initialization...');
+            console.log('Waiting for MediaPipe scripts to load...');
+            
+            // Wait for MediaPipe to be available
+            let attempts = 0;
+            while (!window.FaceMesh && attempts < 20) {
+                console.log('Waiting for FaceMesh...', attempts);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.FaceMesh) {
+                throw new Error('FaceMesh not loaded after 2 seconds');
+            }
+            
+            console.log('Requesting camera access...');
+            
+            // Setup camera first with lower resolution for better performance
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: 320, 
+                    height: 240,
+                    facingMode: 'user',
+                    frameRate: { ideal: 30, max: 30 }
+                } 
+            });
+            cameraVideo.srcObject = stream;
+            
+            console.log('Camera access granted - using MediaPipe eye tracking');
+            
+            // Configure video display based on debug mode
+            if (DEBUG_VIDEO) {
+                cameraVideo.style.position = 'fixed';
+                cameraVideo.style.top = '10px';
+                cameraVideo.style.left = '10px';
+                cameraVideo.style.width = '64px';
+                cameraVideo.style.height = '48px';
+                cameraVideo.style.zIndex = '1000';
+                cameraVideo.style.border = '2px solid red';
+                cameraVideo.style.display = 'block';
+                cameraVideo.style.transform = 'scaleX(-1)'; // Mirror for debug
+            } else {
+                // Top left corner, 10% size
+                cameraVideo.style.position = 'fixed';
+                cameraVideo.style.top = '10px';
+                cameraVideo.style.left = '10px';
+                cameraVideo.style.transform = 'scaleX(-1)';
+                cameraVideo.style.width = '64px';
+                cameraVideo.style.height = '48px';
+                cameraVideo.style.zIndex = '1000';
+                cameraVideo.style.border = '1px solid rgba(255,255,255,0.2)';
+                cameraVideo.style.display = 'block';
+                cameraVideo.style.opacity = '0.1'; // Only difference from debug
+            }
+            
+            console.log('Camera access granted, setting up MediaPipe...');
+            
+            // Setup canvas dimensions - large for center, small for corner
+            faceCanvas.width = 600;
+            faceCanvas.height = 450;
+            webcamCanvas.width = 64;
+            webcamCanvas.height = 48;
+            
+            // Initialize MediaPipe Face Mesh - access from window object
+            const FaceMesh = window.FaceMesh;
+            console.log('FaceMesh available:', !!FaceMesh);
+            
+            if (!FaceMesh) {
+                console.error('FaceMesh not available on window object');
+                return;
+            }
+            
+            faceMesh = new FaceMesh({
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                }
+            });
+            
+            faceMesh.setOptions({
+                maxNumFaces: 1,
+                refineLandmarks: true,  // Enable iris tracking
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+            
+            faceMesh.onResults(drawFaceLandmarks);
+            
+            // Start detection loop
+            isDetecting = true;
+            detectFaces();
+            
+        } catch (error) {
+            console.error('Face detection initialization failed:', error);
+            console.log('Falling back to simple CSS eyes');
+            activateFallbackEyes();
+        }
+    }
 
-    eyeGlyph.addEventListener('mouseenter', () => setEyesOpen(true));
-    eyeGlyph.addEventListener('mouseleave', () => setEyesOpen(false));
+    async function detectFaces() {
+        if (!isDetecting || !faceMesh) return;
+        
+        // Throttle detection to target frame rate
+        const now = Date.now();
+        if (now - lastDetectionTime < DETECTION_INTERVAL) {
+            requestAnimationFrame(detectFaces);
+            return;
+        }
+        lastDetectionTime = now;
+        
+        if (cameraVideo.readyState === 4) {
+            await faceMesh.send({image: cameraVideo});
+        }
+        
+        requestAnimationFrame(detectFaces);
+    }
+
+    function stabilizeDetections(detections) {
+        if (!detections || detections.length === 0) return detections;
+        
+        // Filter by confidence
+        const highConfidenceDetections = detections.filter(d => 
+            !d.score || d.score.length === 0 || d.score[0] > CONFIDENCE_THRESHOLD
+        );
+        
+        if (highConfidenceDetections.length === 0) return detections;
+        
+        // Add to history
+        frameHistory.push(highConfidenceDetections);
+        if (frameHistory.length > HISTORY_SIZE) {
+            frameHistory.shift();
+        }
+        
+        // If we don't have enough history, return current
+        if (frameHistory.length < 3) return highConfidenceDetections;
+        
+        // Average positions across frames
+        return highConfidenceDetections.map((detection, detectionIndex) => {
+            const stabilizedDetection = { ...detection };
+            
+            // Average bounding box
+            let avgXCenter = 0, avgYCenter = 0, avgWidth = 0, avgHeight = 0;
+            let validFrames = 0;
+            
+            frameHistory.forEach(frame => {
+                if (frame[detectionIndex]) {
+                    avgXCenter += frame[detectionIndex].boundingBox.xCenter;
+                    avgYCenter += frame[detectionIndex].boundingBox.yCenter;
+                    avgWidth += frame[detectionIndex].boundingBox.width;
+                    avgHeight += frame[detectionIndex].boundingBox.height;
+                    validFrames++;
+                }
+            });
+            
+            if (validFrames > 0) {
+                stabilizedDetection.boundingBox = {
+                    xCenter: avgXCenter / validFrames,
+                    yCenter: avgYCenter / validFrames,
+                    width: avgWidth / validFrames,
+                    height: avgHeight / validFrames
+                };
+            }
+            
+            // Average landmarks
+            if (detection.landmarks && frameHistory[0][detectionIndex]?.landmarks) {
+                stabilizedDetection.landmarks = detection.landmarks.map((landmark, landmarkIndex) => {
+                    let avgX = 0, avgY = 0;
+                    let validLandmarks = 0;
+                    
+                    frameHistory.forEach(frame => {
+                        if (frame[detectionIndex]?.landmarks[landmarkIndex]) {
+                            avgX += frame[detectionIndex].landmarks[landmarkIndex].x;
+                            avgY += frame[detectionIndex].landmarks[landmarkIndex].y;
+                            validLandmarks++;
+                        }
+                    });
+                    
+                    return validLandmarks > 0 ? {
+                        x: avgX / validLandmarks,
+                        y: avgY / validLandmarks,
+                        z: landmark.z
+                    } : landmark;
+                });
+            }
+            
+            return stabilizedDetection;
+        });
+    }
+
+    // Eyelid landmarks for blink detection
+    const LEFT_EYE_UPPER = 159;
+    const LEFT_EYE_LOWER = 145;
+    const RIGHT_EYE_UPPER = 386;
+    const RIGHT_EYE_LOWER = 374;
+    
+    // Calculate void intensity based on eye openness and fractal activity
+    function calculateVoidIntensity(eyeOpenness, fractalActivity) {
+        // Normalize fractal activity (it can get quite large)
+        const normalizedFractalActivity = Math.min(fractalActivity / 100, 1);
+        
+        // Calculate combined intensity
+        const eyeComponent = eyeOpenness * EYE_CONFIG.voidIntensity.eyeWeight;
+        const fractalComponent = normalizedFractalActivity * EYE_CONFIG.voidIntensity.fractalWeight;
+        const rawIntensity = eyeComponent + fractalComponent;
+        
+        // Apply base intensity and clamp to max
+        const intensity = EYE_CONFIG.voidIntensity.baseIntensity + 
+                         (rawIntensity * (EYE_CONFIG.voidIntensity.maxIntensity - EYE_CONFIG.voidIntensity.baseIntensity));
+        
+        return Math.max(EYE_CONFIG.voidIntensity.baseIntensity, Math.min(EYE_CONFIG.voidIntensity.maxIntensity, intensity));
+    }
+    
+    // Apply void intensity to all text elements
+    function updateVoidRevelation(intensity) {
+        const screams = voidContainer.querySelectorAll('.scream');
+        
+        screams.forEach(scream => {
+            // Apply intensity-based styling
+            scream.style.opacity = intensity;
+            scream.style.color = `rgba(255, 255, 255, ${0.5 + (intensity * 0.5)})`;
+            scream.style.textShadow = `0 0 ${18 * intensity}px rgba(255, 255, 255, ${0.6 * intensity})`;
+            
+            // Add subtle color variation based on intensity
+            const hue = (animationTime * 10 + intensity * 60) % 360;
+            if (intensity > 0.7) {
+                scream.style.color = `hsla(${hue}, 70%, ${60 + (intensity * 40)}%, ${intensity})`;
+            }
+        });
+    }
+    
+    // Bezier curve helper function
+    function drawBezierSpline(ctx, startX, startY, cp1X, cp1Y, cp2X, cp2Y, endX, endY, thickness = EYE_CONFIG.spline.thicknessDetail) {
+        ctx.lineWidth = thickness;
+        ctx.strokeStyle = EYE_CONFIG.colors.splineStroke;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, endX, endY);
+        ctx.stroke();
+    }
+    
+    // Generate chaotic fractal geometry
+    function generateFractal(ctx, centerX, centerY, size, complexity, chaos, time) {
+        if (complexity <= 0 || size < EYE_CONFIG.fractal.minSize) return;
+        
+        // Track fractal activity for intensity calculation
+        currentFractalActivity += size * complexity * chaos * 0.01;
+        
+        const numFragments = Math.floor(EYE_CONFIG.fractal.fragmentRange.min + 
+                                      Math.random() * EYE_CONFIG.fractal.fragmentRange.max);
+        
+        for (let i = 0; i < numFragments; i++) {
+            const angle = (i / numFragments) * Math.PI * 2 + time * 0.1;
+            const distanceRange = EYE_CONFIG.fractal.geometry.distanceMax - EYE_CONFIG.fractal.geometry.distanceMin;
+            const distance = size * (EYE_CONFIG.fractal.geometry.distanceMin + Math.random() * distanceRange);
+            const sizeRange = EYE_CONFIG.fractal.geometry.sizeMax - EYE_CONFIG.fractal.geometry.sizeMin;
+            const fragSize = size * (EYE_CONFIG.fractal.geometry.sizeMin + Math.random() * sizeRange);
+            
+            const x = centerX + Math.cos(angle) * distance * (1 + chaos * (Math.random() - 0.5));
+            const y = centerY + Math.sin(angle) * distance * (1 + chaos * (Math.random() - 0.5));
+            
+            // Draw fragment
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle + time * EYE_CONFIG.fractal.geometry.rotationSpeed);
+            
+            const hue = (time * EYE_CONFIG.colors.fractalHue + i * 60) % 360;
+            ctx.strokeStyle = `hsla(${hue}, ${EYE_CONFIG.colors.fractalSaturation}%, ${EYE_CONFIG.colors.fractalLightness}%, ${EYE_CONFIG.colors.fractalAlpha})`;
+            ctx.lineWidth = 1 + Math.random() * 2;
+            
+            // Choose shape based on probabilities
+            const rand = Math.random();
+            const triangle = EYE_CONFIG.fractal.shapes.triangle;
+            const rectangle = triangle + EYE_CONFIG.fractal.shapes.rectangle;
+            
+            ctx.beginPath();
+            
+            if (rand < triangle) {
+                // Triangle
+                ctx.moveTo(0, -fragSize);
+                ctx.lineTo(-fragSize * 0.866, fragSize * 0.5);
+                ctx.lineTo(fragSize * 0.866, fragSize * 0.5);
+                ctx.closePath();
+            } else if (rand < rectangle) {
+                // Rectangle
+                ctx.rect(-fragSize/2, -fragSize/2, fragSize, fragSize);
+            } else {
+                // Pentagon
+                for (let j = 0; j < 5; j++) {
+                    const ang = (j / 5) * Math.PI * 2;
+                    const px = Math.cos(ang) * fragSize;
+                    const py = Math.sin(ang) * fragSize;
+                    if (j === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+            }
+            
+            ctx.stroke();
+            ctx.restore();
+            
+            // Recurse
+            generateFractal(ctx, x, y, fragSize, complexity - 1, chaos, time);
+        }
+    }
+    
+    // Apply glitch effect
+    function applyGlitchEffect(ctx, canvas, intensity, time) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // RGB channel shifting
+        const shiftAmount = Math.floor(intensity * EYE_CONFIG.glitch.colorShift * 10);
+        
+        for (let i = 0; i < data.length; i += 4) {
+            const x = (i / 4) % canvas.width;
+            const y = Math.floor((i / 4) / canvas.width);
+            
+            // Time-based noise using configurable wave frequencies
+            const noise = Math.sin(x * EYE_CONFIG.glitch.waveFrequency.x + time * EYE_CONFIG.glitch.waveFrequency.timeX) * 
+                         Math.cos(y * EYE_CONFIG.glitch.waveFrequency.y + time * EYE_CONFIG.glitch.waveFrequency.timeY) * intensity;
+            
+            // Color shifting
+            if (x > shiftAmount && x < canvas.width - shiftAmount) {
+                const shiftedR = data[i - shiftAmount * 4] || 0;
+                const shiftedB = data[i + shiftAmount * 4] || 0;
+                
+                data[i] = shiftedR + noise * EYE_CONFIG.glitch.noiseAmplitude.red;       // Red
+                data[i + 1] = data[i + 1] + noise * EYE_CONFIG.glitch.noiseAmplitude.green; // Green
+                data[i + 2] = shiftedB + noise * EYE_CONFIG.glitch.noiseAmplitude.blue;     // Blue
+            }
+            
+            // Random pixelation using configurable chance
+            if (Math.random() < intensity * EYE_CONFIG.glitch.pixelationChance) {
+                data[i] = Math.random() * 255;
+                data[i + 1] = Math.random() * 255;
+                data[i + 2] = Math.random() * 255;
+            }
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+    }
+    
+    function updateAbstractEyes(landmarks) {
+        animationTime += EYE_CONFIG.glitch.timeSpeed;
+        
+        // Reset fractal activity counter
+        currentFractalActivity = 0;
+        
+        // Calculate eyelid positions
+        const leftUpper = landmarks[LEFT_EYE_UPPER];
+        const leftLower = landmarks[LEFT_EYE_LOWER];
+        const rightUpper = landmarks[RIGHT_EYE_UPPER];
+        const rightLower = landmarks[RIGHT_EYE_LOWER];
+        
+        // Calculate eye openness (0 = closed, 1 = fully open)
+        const leftEyeOpen = Math.max(0, Math.min(1, Math.abs(leftUpper.y - leftLower.y) * EYE_CONFIG.tracking.opennessSensitivity));
+        const rightEyeOpen = Math.max(0, Math.min(1, Math.abs(rightUpper.y - rightLower.y) * EYE_CONFIG.tracking.opennessSensitivity));
+        
+        // Average eye openness
+        const averageEyeOpenness = (leftEyeOpen + rightEyeOpen) / 2;
+        
+        // Clear entire canvas
+        eyeCtx.clearRect(0, 0, eyeCanvas.width, eyeCanvas.height);
+        
+        // Draw both eyes on fullscreen canvas (this will populate currentFractalActivity)
+        drawFullscreenEye(eyeCtx, leftEyeOpen, animationTime, 'left');
+        drawFullscreenEye(eyeCtx, rightEyeOpen, animationTime, 'right');
+        
+        // Calculate target void intensity based on eye openness and fractal activity
+        targetVoidIntensity = calculateVoidIntensity(averageEyeOpenness, currentFractalActivity);
+        
+        // Smooth intensity changes
+        currentVoidIntensity += (targetVoidIntensity - currentVoidIntensity) * EYE_CONFIG.voidIntensity.smoothing;
+
+        // Drive the procedural horror score with eyelid tension
+        updateHorrorAudio(averageEyeOpenness);
+        
+        // Update void text revelation
+        updateVoidRevelation(currentVoidIntensity);
+    }
+    
+    function drawFullscreenEye(ctx, openness, time, side) {
+        const eyeConfig = side === 'left' ? EYE_CONFIG.leftEye : EYE_CONFIG.rightEye;
+        
+        // Calculate absolute positions on screen
+        const centerX = eyeCanvas.width * eyeConfig.centerX;
+        const centerY = eyeCanvas.height * eyeConfig.centerY;
+        const width = eyeConfig.width;
+        const height = eyeConfig.height;
+        
+        // Calculate spline parameters based on eye openness
+        const gap = EYE_CONFIG.spline.closedGap + (openness * EYE_CONFIG.spline.peakHeight);
+        const controlOffset = EYE_CONFIG.spline.controlOffset * width;
+        
+        // Calculate corner connection points
+        const leftCornerX = centerX - width/2 + EYE_CONFIG.corners.marginX;
+        const rightCornerX = centerX + width/2 - EYE_CONFIG.corners.marginX;
+        const leftCornerY = centerY + (openness * EYE_CONFIG.corners.leftOffsetY - EYE_CONFIG.corners.centerOffset);
+        const rightCornerY = centerY + (openness * EYE_CONFIG.corners.rightOffsetY - EYE_CONFIG.corners.centerOffset / 2);
+        
+        // Top eyelid curve (opens upward)
+        const topY = centerY - gap / 2;
+        const topControlY = topY - (openness * EYE_CONFIG.spline.curveMagnitude * EYE_CONFIG.spline.tension);
+        
+        drawBezierSpline(
+            ctx,
+            leftCornerX, leftCornerY,           // Start point (left corner)
+            leftCornerX + controlOffset, topControlY,   // Control point 1
+            rightCornerX - controlOffset, topControlY, // Control point 2
+            rightCornerX, rightCornerY,         // End point (right corner)
+            EYE_CONFIG.spline.thicknessMain
+        );
+        
+        // Bottom eyelid curve (opens downward)
+        const bottomY = centerY + gap / 2;
+        const bottomControlY = bottomY + (openness * EYE_CONFIG.spline.curveMagnitude * EYE_CONFIG.spline.tension);
+        
+        drawBezierSpline(
+            ctx,
+            leftCornerX, leftCornerY,           // Start point (left corner)
+            leftCornerX + controlOffset, bottomControlY, // Control point 1
+            rightCornerX - controlOffset, bottomControlY, // Control point 2
+            rightCornerX, rightCornerY,         // End point (right corner)
+            EYE_CONFIG.spline.thicknessMain
+        );
+        
+        // Generate fractal in the middle (between eyelids)
+        if (openness > 0.1) {
+            const fractalSize = EYE_CONFIG.fractal.minSize + 
+                               (openness * (EYE_CONFIG.fractal.maxSize - EYE_CONFIG.fractal.minSize));
+            
+            // Create temporary canvas for fractal with glitch effects
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            generateFractal(
+                tempCtx, 
+                width/2, 
+                height/2, 
+                fractalSize,
+                EYE_CONFIG.fractal.complexity,
+                EYE_CONFIG.fractal.chaos,
+                time + (side === 'left' ? 0 : Math.PI)
+            );
+            
+            // Apply glitch effects
+            const glitchIntensity = openness * EYE_CONFIG.glitch.intensity;
+            applyGlitchEffect(tempCtx, tempCanvas, glitchIntensity, time);
+            
+            // Draw fractal to main canvas at eye position
+            ctx.drawImage(tempCanvas, centerX - width/2, centerY - height/2);
+        }
+    }
+    
+    function drawFaceLandmarks(results) {
+        // Clear webcam canvas only
+        webcamCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+        
+        // Draw webcam feed in corner
+        webcamCtx.save();
+        webcamCtx.scale(-1, 1);
+        webcamCtx.translate(-webcamCanvas.width, 0);
+        webcamCtx.drawImage(cameraVideo, 0, 0, webcamCanvas.width, webcamCanvas.height);
+        webcamCtx.restore();
+        
+        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+            const landmarks = results.multiFaceLandmarks[0];
+            
+            // Update abstract eye visuals and void intensity
+            updateAbstractEyes(landmarks);
+        }
+    }
+    
+
+    // Initialize configuration system
+    validateConfig();
+    armHorrorAutoplay();
+    
+    // Random Blink Mode (1 in 3 chance)
+    if (Math.random() < 0.33) {
+        document.body.classList.add('blink-mode');
+    }
+
+    // Toggle Blink Mode
+    document.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'b') {
+            document.body.classList.toggle('blink-mode');
+        }
+    });
 
     loadScreams();
     animate();
     setInterval(loadScreams, 30000);
+    
+    // Try MediaPipe, but fallback after timeout
+    initializeFaceMesh();
+    
+    // Fallback timeout - if MediaPipe hasn't initialized after 5 seconds, use simple eyes
+    setTimeout(() => {
+        if (!usingFallbackEyes && (!faceMesh || !isDetecting)) {
+            console.log('MediaPipe initialization timeout - using fallback eyes');
+            activateFallbackEyes();
+        }
+    }, 5000);
+    
+    // Console help
+    console.log('👁️ THE VOID - Eye Tracking System');
+    console.log('Attempting MediaPipe eye tracking...');
+    console.log('Will fallback to simple CSS eyes if camera unavailable');
+    console.log('');
+    console.log('👁️ EYE & VOID CONFIGURATION COMMANDS (MediaPipe only):');
+    console.log('updateEyeConfig("path.to.setting", value) - Update any config value');
+    console.log('setEyePositions(leftX, leftY, rightX, rightY) - Position eyes (0-1)');
+    console.log('setEyeSizes(width, height) - Eye canvas sizes');
+    console.log('setSplineTension(0-1) - Curve smoothness');
+    console.log('setFractalChaos(0-2) - Chaos intensity');
+    console.log('setGlitchIntensity(0-1) - Glitch strength');
+    console.log('setVoidIntensity(eyeWeight, fractalWeight) - Intensity balance');
+    console.log('setVoidSmoothing(0-1) - Intensity change smoothing');
+    console.log('loadPreset("minimal|chaotic|nightmare") - Load preset');
+    console.log('saveConfig("name") - Save current config');
+    console.log('loadConfig("name") - Load saved config');
+    console.log('listConfigs() - Show available configs');
+    console.log('EYE_CONFIG - View current settings');
+    console.log('💡 Void intensity = (eye openness * 70%) + (fractal chaos * 30%)');
 </script>
 {% endblock %}
-

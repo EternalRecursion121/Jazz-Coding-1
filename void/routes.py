@@ -1,11 +1,13 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, send_from_directory, current_app
+import os
 from void.models import Scream, db
 
 bp = Blueprint('void', __name__, template_folder='templates')
 
 @bp.route('/')
 def index():
-    return render_template('scream.html')
+    placeholder = request.args.get('p', 'SCREAM')
+    return render_template('scream.html', placeholder=placeholder)
 
 @bp.route('/void')
 def enter_void():
@@ -32,3 +34,16 @@ def get_screams():
     limit = request.args.get('limit', 50, type=int)
     screams = Scream.query.order_by(Scream.created_at.desc()).limit(limit).all()
     return jsonify([s.to_dict() for s in screams])
+
+@bp.route('/news')
+def fake_news():
+    return render_template('fake_news.html')
+
+@bp.route('/vortex')
+def vortex():
+    return render_template('vortex.html')
+
+@bp.route('/audio/<path:filename>')
+def serve_audio(filename):
+    audio_dir = os.path.join(current_app.root_path, 'shared', 'audio')
+    return send_from_directory(audio_dir, filename)

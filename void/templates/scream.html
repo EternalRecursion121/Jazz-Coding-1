@@ -173,6 +173,44 @@
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.5); }
     }
+
+    /* Burn-in marks from scare */
+    .burn-mark {
+        position: fixed;
+        font-family: monospace;
+        font-size: 8rem;
+        color: rgba(255, 0, 0, 0.02);
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        user-select: none;
+        white-space: pre;
+        line-height: 1;
+        z-index: 5000;
+        transition: color 0.3s;
+        opacity: 0.1;
+    }
+
+    .burn-mark:hover {
+        color: rgba(255, 0, 0, 0.4);
+    }
+
+    @keyframes burn-pulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.8; }
+    }
+
+    #whatisthevoid {
+        position: absolute;
+        right: 100px;
+        top: 100px;
+        opacity: 1;
+        z-index: 10000;
+        cursor: pointer;
+    }
+
+    #whatisthevoid:hover {
+        color: red;
+    }
 </style>
 {% endblock %}
 
@@ -230,13 +268,14 @@
 
 <div class="container" id="main-container">
     <form id="scream-form">
-        <input type="text" id="scream-input" placeholder="SCREAM" autocomplete="off" maxlength="140" autofocus>
+        <input type="text" id="scream-input" placeholder="{{ placeholder|default('SCREAM') }}" autocomplete="off" maxlength="140" autofocus>
     </form>
     <div class="feedback" id="feedback"></div>
     
     <div class="actions">
         <a href="{{ url_for('void.enter_void') }}" class="btn-void" id="enter-void">ENTER THE VOID</a>
     </div>
+    <div id="whatisthevoid">void?</div>
 </div>
 {% endblock %}
 
@@ -246,12 +285,19 @@
     const input = document.getElementById('scream-input');
     const feedback = document.getElementById('feedback');
     const enterBtn = document.getElementById('enter-void');
+    const whatIsTheVoidBtn = document.getElementById('whatisthevoid');
     const container = document.getElementById('main-container');
     const unicornJumpscare = document.getElementById('unicorn-jumpscare');
     const unicornSvg = document.getElementById('unicorn-svg');
-    
+
+    // Track if user has completed the full loop (for burn-in marks)
+    let hasCompletedLoop = localStorage.getItem('hasCompletedLoop') === 'true';
+    let burnMarks = [];
+    let burnMarksCreated = false;
     let jumpscareActive = false;
     let audioContext = null;
+    
+    console.log('Initial hasCompletedLoop:', hasCompletedLoop);
 
     // Generate a horrifying scream sound using Web Audio API
     function playScreamSound() {
@@ -299,7 +345,6 @@
         const source = audioContext.createBufferSource();
         source.buffer = buffer;
         
-        // Add some reverb-like effect with delay
         const gainNode = audioContext.createGain();
         gainNode.gain.value = 0.8;
         
@@ -340,9 +385,176 @@
         }
     }
 
-    // Trigger on keypress while typing
+    function createBurnMarks() {
+        // Create 3-5 burn-in marks
+        const numMarks = 3 + Math.floor(Math.random() * 3);
+        const scareFace = `(  o  )\n \\   /\n  O O`;
+        
+        console.log('Creating burn marks:', numMarks);
+        
+        for (let i = 0; i < numMarks; i++) {
+            const mark = document.createElement('div');
+            mark.className = 'burn-mark';
+            mark.textContent = scareFace;
+            
+            // Random position
+            mark.style.left = `${Math.random() * 70 + 15}%`;
+            mark.style.top = `${Math.random() * 70 + 15}%`;
+            const initialRotation = (Math.random() - 0.5) * 30;
+            mark.style.transform = `rotate(${initialRotation}deg)`;
+            mark.dataset.rotation = initialRotation;
+            
+            // Add padding for larger click area
+            mark.style.padding = '20px';
+            
+            // Click handler - go to fake news
+            mark.addEventListener('click', (e) => {
+                console.log('Burn mark clicked!');
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = "{{ url_for('void.fake_news') }}";
+            });
+            
+            // Also add touch event for mobile
+            mark.addEventListener('touchstart', (e) => {
+                console.log('Burn mark touched!');
+                e.preventDefault();
+                window.location.href = "{{ url_for('void.fake_news') }}";
+            });
+            
+            document.body.appendChild(mark);
+            burnMarks.push(mark);
+            
+            console.log('Burn mark created at', mark.style.left, mark.style.top);
+            
+            // Start pulsing after a short delay
+            setTimeout(() => {
+                startBurnPulse(mark, i);
+            }, 2000 + i * 1000);
+        }
+    }
+
+    function startBurnPulse(mark, index) {
+        let pulseIntensity = 0;
+        let intensityMultiplier = 0.1;
+        
+        setInterval(() => {
+            pulseIntensity += 0.08;
+            intensityMultiplier += 0.008;
+            
+            const pulse = Math.sin(pulseIntensity + index) * 0.5 + 0.5;
+            const minOpacity = 0.05 * intensityMultiplier;
+            const maxOpacity = Math.min(0.95, 0.1 + (intensityMultiplier * 0.8));
+            
+            mark.style.opacity = minOpacity + (pulse * (maxOpacity - minOpacity));
+            
+            const colorIntensity = Math.min(intensityMultiplier * 2, 1);
+            mark.style.color = `rgba(255, ${Math.floor(50 * (1 - colorIntensity))}, ${Math.floor(50 * (1 - colorIntensity))}, 1)`;
+            
+            const scale = 1 + (pulse * 0.15 * intensityMultiplier);
+            const rotation = parseFloat(mark.dataset.rotation || 0) + (pulse - 0.5) * 3 * intensityMultiplier;
+            mark.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+            mark.style.filter = `drop-shadow(0 0 ${pulse * 15 * intensityMultiplier}px rgba(255, 0, 0, ${pulse * intensityMultiplier}))`;
+            
+            mark.dataset.rotation = rotation;
+        }, 60);
+    }
+
+    const transitionToTheVoid = () => {
+        container.classList.add('warp-active');
+        setTimeout(() => {
+            window.location.href = "{{ url_for('void.enter_void') }}";
+        }, 1200);
+    }
+
+    async function playTheVoidExplainedAudio() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        try {
+            const audioUrl = "{{ url_for('void.serve_audio', filename='thevoidexplained.mp3') }}";
+            const response = await fetch(audioUrl);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffer;
+
+            const distortion = audioCtx.createWaveShaper();
+            const preDistortionGain = audioCtx.createGain();
+
+            const curve = new Float32Array(256);
+            for (let i = 0; i < 256; i++) {
+                const x = (i * 2) / 255 - 1;
+                curve[i] = Math.tanh(x * 4); 
+            }
+            distortion.curve = curve;
+            distortion.oversample = '4x';
+
+            source.connect(preDistortionGain);
+            preDistortionGain.connect(distortion);
+            distortion.connect(audioCtx.destination);
+
+            source.start();
+
+            const duration = audioBuffer.duration;
+            const now = audioCtx.currentTime;
+
+            source.playbackRate.setValueAtTime(1, now);
+            source.playbackRate.linearRampToValueAtTime(0.8, now + duration);
+
+            preDistortionGain.gain.setValueAtTime(0, now);
+            preDistortionGain.gain.linearRampToValueAtTime(50, now + duration);
+
+            source.onended = () => {
+                audioCtx.close();
+                transitionToTheVoid();
+            };
+
+        } catch (e) {
+            console.error("Error playing 'thevoidexplained.mp3':", e);
+            if (audioCtx) audioCtx.close();
+        }
+    }
+
+    // Check if returning from vortex - placeholder will be corrupted/modified from "SCREAM"
+    const urlParams = new URLSearchParams(window.location.search);
+    const placeholder = urlParams.get('p');
+    
+    console.log('Page loaded with placeholder:', placeholder);
+    console.log('hasCompletedLoop from localStorage:', hasCompletedLoop);
+    
+    const isCorrupted = placeholder && placeholder !== 'SCREAM';
+    
+    if (isCorrupted) {
+        console.log('✓ Loop completed! Placeholder is corrupted:', placeholder);
+        console.log('Setting flag and creating burn marks');
+        hasCompletedLoop = true;
+        localStorage.setItem('hasCompletedLoop', 'true');
+        setTimeout(() => {
+            if (!burnMarksCreated) {
+                console.log('Creating burn marks now');
+                createBurnMarks();
+                burnMarksCreated = true;
+            }
+        }, 1000);
+    } else if (hasCompletedLoop) {
+        console.log('✓ User has completed loop before, showing burn marks');
+        setTimeout(() => {
+            if (!burnMarksCreated) {
+                console.log('Creating burn marks now');
+                createBurnMarks();
+                burnMarksCreated = true;
+            }
+        }, 1000);
+    } else {
+        console.log('✗ No burn marks - user has not completed loop yet');
+        console.log('  - placeholder is:', placeholder || 'SCREAM (default)');
+        console.log('  - isCorrupted:', isCorrupted);
+        console.log('  - hasCompletedLoop:', hasCompletedLoop);
+    }
+
+    // Trigger on keypress while typing (10% chance)
     input.addEventListener('keydown', (e) => {
-        // Don't trigger on Enter (that's handled by submit)
         if (e.key !== 'Enter') {
             maybeJumpscare();
         }
@@ -375,12 +587,13 @@
         }
     });
 
+    whatIsTheVoidBtn.addEventListener("click", () => {
+        playTheVoidExplainedAudio()
+    })
+
     enterBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        container.classList.add('warp-active');
-        setTimeout(() => {
-            window.location.href = "{{ url_for('void.enter_void') }}";
-        }, 1200);
+        transitionToTheVoid();
     });
 </script>
 {% endblock %}
