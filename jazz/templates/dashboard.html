@@ -141,6 +141,7 @@
 <div class="dashboard">
     <h1>JAZZ CODING</h1>
     <p class="rule-desc">COMMIT OR DIE. RULE: {{ max_days }} DAYS MAX INACTIVITY.</p>
+    <audio id="background-audio" src="{{ url_for('void.serve_audio', filename='stayingalive.mp3') }}" loop autoplay></audio>
 
     <!-- Calculate max commits for relative progress bar scaling -->
     {% set max_commits = 1 %}
