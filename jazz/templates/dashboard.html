@@ -134,6 +134,31 @@
         margin-top: 50px;
         color: #444;
     }
+    .jazz-banner {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        background-color: var(--highlight-color);
+        color: #000;
+        padding: 20px;
+        font-size: 1.5rem;
+        border: 2px solid #000;
+        cursor: pointer;
+        z-index: 1000;
+        text-align: center;
+        box-shadow: 5px 5px 0px var(--glitch-color-2);
+        animation: shake 0.8s infinite;
+    }
+    .jazz-banner:hover {
+        background-color: var(--glitch-color-1);
+        color: #fff;
+    }
+    .jazz-banner-left {
+        left: 20px;
+    }
+    .jazz-banner-right {
+        right: 20px;
+    }
 </style>
 {% endblock %}
 
@@ -141,7 +166,15 @@
 <div class="dashboard">
     <h1>JAZZ CODING</h1>
     <p class="rule-desc">COMMIT OR DIE. RULE: {{ max_days }} DAYS MAX INACTIVITY.</p>
-    <audio id="background-audio" src="{{ url_for('void.serve_audio', filename='stayingalive.mp3') }}" loop autoplay></audio>
+    <audio id="background-audio" src="{{ url_for('void.serve_audio', filename='stayingalive.mp3') }}" loop preload="auto"></audio>
+
+    <div id="jazz-banner-left" class="jazz-banner jazz-banner-left">
+        CLICK HERE<br>IF YOU ARE JAZZ
+    </div>
+    <div id="jazz-banner-right" class="jazz-banner jazz-banner-right">
+        CLICK HERE<br>IF YOU ARE JAZZ
+    </div>
+
 
     <!-- Calculate max commits for relative progress bar scaling -->
     {% set max_commits = 1 %}
@@ -182,4 +215,21 @@
 
     <a href="{{ url_for('void.index') }}" class="return-home">return to void</a>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const audio = document.getElementById('background-audio');
+        const leftBanner = document.getElementById('jazz-banner-left');
+        const rightBanner = document.getElementById('jazz-banner-right');
+
+        function playMusic() {
+            audio.play().catch(error => console.error("Audio play failed:", error));
+            leftBanner.style.display = 'none';
+            rightBanner.style.display = 'none';
+        }
+
+        leftBanner.addEventListener('click', playMusic);
+        rightBanner.addEventListener('click', playMusic);
+    });
+</script>
 {% endblock %}
